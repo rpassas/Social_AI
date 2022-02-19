@@ -47,14 +47,6 @@ class Agent():
         '''
         self.world.append(world)
 
-    def conformity_error(self, pred_world):
-        '''
-        Given external prediction of the agent's behavior, how off was the agent's behavior? (i.e. how well do we conform?)
-        '''
-        dif = [abs(i-j) for i, j in zip(self.behavior, pred_world)]
-        e = sum(dif)/len(dif)
-        return e
-
     def behavior_prediction_error(self):
         '''
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
@@ -69,12 +61,12 @@ class Agent():
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
-        conformity_error = self.conformity_error()
-        threshold = self.action_cost(conformity_error)
-        if conformity_error > threshold:
+        pred_error = self.behavior_prediction_error()
+        threshold = self.action_cost(pred_error)
+        if pred_error > threshold:
             r = np.random(0.8, 1)
             self.b_prior = [abs(r - i) for i in self.world_pred]
-            self.metabolism += conformity_error
+            self.metabolism += pred_error
 
     def learn_predict_world(self):
         # TODO: this is not learning, just a placeholder heuristic

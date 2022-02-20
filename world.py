@@ -1,5 +1,6 @@
 
-from agent import Agent
+from basic_agent import Basic_Agent
+from other_agent import Other_Agent
 import numpy as np
 import argparse
 
@@ -37,8 +38,12 @@ class World():
         '''
         # later on we can add more agents
         num_agents = 2
-        for i in range(num_agents):
-            self.agents.append(Agent(self.behavior_size))
+        if type == "basic":
+            for i in range(num_agents):
+                self.agents.append(Basic_Agent(self.behavior_size))
+        else:
+            for i in range(num_agents):
+                self.agents.append(Other_Agent(self.behavior_size))
 
     def run(self):
         '''
@@ -107,8 +112,12 @@ def main():
                         metavar="behavior_size", help="size of behavior vector")
     parser.add_argument("-t", "--time", type=int,
                         metavar="time", help="number of time steps")
-    parser.add_argument("-a", "--agent", type=int,
+    parser.add_argument("-a", "--agent", type=str,
                         metavar="agent", help="type of agents to be used: basic, other")
+    parser.add_argument("-p", "--alpha", type=int,
+                        metavar="alpha", help="prior learning rate: 0.001 - 1")
+    parser.add_argument("-c", "--beta", type=int,
+                        metavar="beta", help="conformity learning rate: 0.001 - 1")
 
     args = parser.parse_args()
     world = World(args.behavior_size, args.time)

@@ -22,8 +22,6 @@ class Basic_Agent():
         self.state_size = state_size
         # behavioral priors
         self.b_priors = np.random.rand(1, state_size).round(3)
-        print(self.b_priors)
-        print("here")
         # current behavior
         self.behavior = []
         # estimate of world state parameters
@@ -78,8 +76,6 @@ class Basic_Agent():
         '''
         #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
         dif = [abs(g-h) for g, h in zip(self.world[-1], self.world_pred)]
-        print(dif)
-        print(np.sum(dif))
         e = round(np.sum(dif)/len(dif[0]), 3)
         return e
 

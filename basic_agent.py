@@ -69,6 +69,15 @@ class Agent():
         e = round(np.sum(dif)/len(dif[0]), 3)
         return e
 
+    def directional_error(self):
+        '''
+        Given the current state of the world, what is the net direction we should move estimates? (i.e. how well do we predict the world?)
+        '''
+        #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
+        dif = [g-h for g, h in zip(self.world[-1], self.world_pred)]
+        e = round(np.sum(dif)/len(dif[0]), 3)
+        return e
+
     def learn_conform(self):
         # TODO: this is not learning, just a placeholder heuristic
         # the arbitrary cut off via the action_cost maybe graded rather than all or nothing and still needs to be implemented
@@ -78,8 +87,9 @@ class Agent():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            r = round(random.uniform(0, pred_error), 3)
-            self.b_priors = [abs(r - i) for i in self.world_pred]
+            r = round(random.uniform(0, 1), 3)
+            #r = round(random.uniform(pred_error, 1), 3)
+            self.b_priors = [abs(i - r) for i in self.world_pred]
             self.metabolism += pred_error
 
     def learn_predict_world(self):
@@ -90,10 +100,11 @@ class Agent():
         '''
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
-        if pred_error > threshold:
-            r = round(random.uniform(0, pred_error), 3)
-            self.world_pred = [abs(r - i) for i in self.world_pred]
-            self.metabolism += pred_error
+        # if pred_error > threshold:
+        r = pred_error
+        #r = round(random.uniform(pred_error, 1), 3)
+        self.world_pred = [abs(i + r) for i in self.world_pred]
+        self.metabolism += pred_error
 
     def get_cost(self):
         '''
@@ -106,6 +117,7 @@ class Agent():
         Determines willingness to learn based on the cost (error)
         '''
         if self.a_c_fn == "linear":
-            return 0.5
+            return 0.9
+
         else:
-            return 0.5
+            return 0.9

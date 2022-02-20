@@ -31,7 +31,7 @@ class World():
         self.errors = []
         self.costs = []
 
-    def create_agents(self):
+    def create_agents(self, type="basic"):
         '''
         Generate the agents.
         '''
@@ -107,6 +107,8 @@ def main():
                         metavar="behavior_size", help="size of behavior vector")
     parser.add_argument("-t", "--time", type=int,
                         metavar="time", help="number of time steps")
+    parser.add_argument("-a", "--agent", type=int,
+                        metavar="agent", help="type of agents to be used: basic, other")
 
     args = parser.parse_args()
     world = World(args.behavior_size, args.time)

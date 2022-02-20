@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 
-class Basic_Agent():
+class Other_Agent():
     """
     This general agent has an action-cost curve determining likelihood of action given its cost,
     size of state (determines behavior richness), and an inference model for guessing the behavioral priors of other agents whose
@@ -17,17 +17,15 @@ class Basic_Agent():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=5, alpha=1, beta=0.5, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=5, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         self.state_size = state_size
         # behavioral priors
         self.b_priors = np.random.rand(1, state_size).round(3)
-        print(self.b_priors)
-        print("here")
         # current behavior
         self.behavior = []
         # estimate of world state parameters
-        self.world_pred = self.b_priors
+        self.world_pred = self.b_priors.round(3)
         # history of world states
         self.world = []
         # metabolic cost so far (accrued via learning)
@@ -35,17 +33,6 @@ class Basic_Agent():
         # action cost function
         self.a_c_fn = action_cost_fn
         # function for estimating parameters
-
-        # priors adjustment rate
-        if alpha > 1 or alpha < 0.001:
-            self.alpha = 1
-        else:
-            self.alpha = alpha
-        # estimates adjustment rate
-        if beta > 1 or beta < 0.001:
-            self.beta = 1
-        else:
-            self.beta = beta
 
     def make_behavior(self):
         '''
@@ -57,6 +44,7 @@ class Basic_Agent():
         '''
         Generate actual world prediction (list of 0/1) from priors
         '''
+
         # return np.random.binomial(1, self.world_pred)
         return self.world_pred
 
@@ -78,8 +66,15 @@ class Basic_Agent():
         '''
         #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
         dif = [abs(g-h) for g, h in zip(self.world[-1], self.world_pred)]
-        print(dif)
-        print(np.sum(dif))
+        e = round(np.sum(dif)/len(dif[0]), 3)
+        return e
+
+    def directional_error(self):
+        '''
+        Given the current state of the world, what is the net direction we should move estimates? (i.e. how well do we predict the world?)
+        '''
+        #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
+        dif = [g-h for g, h in zip(self.world[-1], self.world_pred)]
         e = round(np.sum(dif)/len(dif[0]), 3)
         return e
 
@@ -92,10 +87,9 @@ class Basic_Agent():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            a = random.choice([-1, 1]) * pred_error * self.alpha
-            r = round(random.uniform(a, 1), 3)
-            self.b_priors = [np.asarray([
-                abs(i - r) if abs(i - r) <= 1 else i for i in self.b_priors[0]])]
+            r = round(random.uniform(0, 1), 3)
+            #r = round(random.uniform(pred_error, 1), 3)
+            self.b_priors = [abs(i - r) for i in self.b_priors[0]]
             self.metabolism += pred_error
 
     def learn_predict_world(self):
@@ -106,11 +100,11 @@ class Basic_Agent():
         '''
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
-        if pred_error > threshold:
-            b = random.choice([-1, 1]) * self.beta
-            self.world_pred = [[abs(i - b) if abs(i - b)
-                               <= 1 else i for i in self.world_pred[0]]]
-            self.metabolism += pred_error
+        # if pred_error > threshold:
+        r = pred_error
+        #r = round(random.uniform(pred_error, 1), 3)
+        self.world_pred = [abs(i + r) for i in self.world_pred]
+        self.metabolism += pred_error
 
     def get_cost(self):
         '''
@@ -123,7 +117,7 @@ class Basic_Agent():
         Determines willingness to learn based on the cost (error)
         '''
         if self.a_c_fn == "linear":
-            return 0.5
+            return 0.9
 
         else:
-            return 0.5
+            return 0.9

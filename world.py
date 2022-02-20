@@ -9,15 +9,19 @@ class World():
     World holds state data.
     """
 
-    def __init__(self, behavior_size=3, time=10):
-        if behavior_size < 1:
+    def __init__(self, behavior_size=4, time=15):
+        if not behavior_size:
+            self.behavior_size = 4
+        elif behavior_size < 1:
             print("behavior size must be 1 or more; will be set to 3 (default).")
-            self.behavior = 3
+            self.behavior_size = 4
         else:
             self.behavior_size = int(behavior_size)
-        if time < 1:
+        if not time:
+            self.time = 15
+        elif time < 1:
             print("time must be 1 or more; will be set to 10 (default).")
-            self.time = 10
+            self.time = 15
         else:
             self.time = int(time)
         self.agents = []
@@ -84,7 +88,7 @@ class World():
         for i in range(self.time):
             print("time step:   {}".format(i+1))
             print("bhv priors:  {}".format(
-                [b[0].tolist() for b in self.b_priors[i]]))
+                [b[0].tolist() for b in np.round(self.b_priors[i], 3)]))
             print("behaviors:   {}".format(
                 [b[0].tolist() for b in self.behaviors[i]]))
             print("predictions: {}".format(

@@ -17,7 +17,7 @@ class Agent():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=3, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=5, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         self.state_size = state_size
         # behavioral priors
@@ -78,8 +78,8 @@ class Agent():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            r = round(random.uniform(0.5, pred_error), 3)
-            self.b_prior = [abs(r - i) for i in self.world_pred]
+            r = round(random.uniform(0, pred_error), 3)
+            self.b_priors = [abs(r - i) for i in self.world_pred]
             self.metabolism += pred_error
 
     def learn_predict_world(self):
@@ -91,7 +91,7 @@ class Agent():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            r = round(random.uniform(0.7, pred_error), 3)
+            r = round(random.uniform(0, pred_error), 3)
             self.world_pred = [abs(r - i) for i in self.world_pred]
             self.metabolism += pred_error
 

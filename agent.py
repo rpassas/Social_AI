@@ -41,6 +41,12 @@ class Agent():
         '''
         return np.random.binomial(1, self.b_priors)
 
+    def make_prediction(self):
+        '''
+        Generate actual world prediction (list of 0/1) from priors
+        '''
+        return np.random.binomial(1, self.world_pred)
+
     def get_world(self, world):
         '''
         For adding current world state to the history
@@ -80,6 +86,18 @@ class Agent():
             r = np.random(0.8, 1)
             self.world_pred = [abs(r - i) for i in self.world_pred]
             self.metabolism += pred_error
+
+    def get_cost(self):
+        '''
+        Get the cost so far.
+        '''
+        return self.metabolism
+
+    def get_acc(self):
+        '''
+        Get the most recent prediction accuracy so far.
+        '''
+        return self.world_pred_acc
 
     def action_cost(self, error):
         '''

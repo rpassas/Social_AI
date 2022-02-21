@@ -75,7 +75,10 @@ class Basic_Agent():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         '''
         #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
-        dif = [abs(g-h) for g, h in zip(self.world[-1], self.world_pred)]
+        print(self.world[-1])
+        print(self.world_pred)
+        dif = [np.asarray([abs(g-h)
+                           for g, h in zip(self.world[-1][0], self.world_pred[0])])]
         e = round(np.sum(dif)/len(dif[0]), 3)
         return e
 

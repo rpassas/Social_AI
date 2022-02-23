@@ -26,8 +26,8 @@ class Basic_Agent():
         self.behavior = []
         # estimate of world state parameters
         self.world_pred = self.b_priors
-        ##JT - predictions about the other agent are set to be equal to the agent's behavioral priors. We should set these independently I think.
-        ## So that would just be np.random.rand(1, state_size).round(3) again.
+        # JT - predictions about the other agent are set to be equal to the agent's behavioral priors. We should set these independently I think.
+        # So that would just be np.random.rand(1, state_size).round(3) again.
         # history of world states
         self.world = []
         # metabolic cost so far (accrued via learning)
@@ -37,7 +37,7 @@ class Basic_Agent():
         # function for estimating parameters
 
         # priors adjustment rate
-        ##JT - Should alpha and beta be set to 0.001 if < .001 ?
+        # JT - Should alpha and beta be set to 0.001 if < .001 ?
         if alpha > 1 or alpha < 0.001:
             self.alpha = 1
         else:
@@ -78,8 +78,6 @@ class Basic_Agent():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         '''
         #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
-        print(self.world[-1])
-        print(self.world_pred)
         dif = [np.asarray([abs(g-h)
                            for g, h in zip(self.world[-1][0], self.world_pred[0])])]
         e = round(np.sum(dif)/len(dif[0]), 3)
@@ -103,7 +101,7 @@ class Basic_Agent():
     def learn_predict_world(self):
         # TODO: this is not learning, just a placeholder heuristic
         # the arbitrary cut off via the action_cost maybe graded rather than all or nothing and still needs to be implemented
-        ##JT - is this adjusting to move self.world_pred closer to the previous self.world? This seems like it's updating randomly instead.
+        # JT - is this adjusting to move self.world_pred closer to the previous self.world? This seems like it's updating randomly instead.
         '''
         Adjust prediction of world states based on prediction error.
         '''
@@ -125,9 +123,9 @@ class Basic_Agent():
         '''
         Determines willingness to learn based on the cost (error)
         '''
-        ##JT - I like the idea that we'll need a threshold, and I think one objective simple objective might be for agents to 
-        ## learn when to stop updating self.world_pred to avoid overfitting, since priors (which range from 0-1) will never perfectly match behavior 
-        ## (which is operationalized as 0 or 1). We might want to set this low at first though, to see agents bounce around a bit.
+        # JT - I like the idea that we'll need a threshold, and I think one objective simple objective might be for agents to
+        # learn when to stop updating self.world_pred to avoid overfitting, since priors (which range from 0-1) will never perfectly match behavior
+        # (which is operationalized as 0 or 1). We might want to set this low at first though, to see agents bounce around a bit.
         if self.a_c_fn == "linear":
             return 0.5
 

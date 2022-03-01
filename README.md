@@ -20,6 +20,15 @@ inference.py - will have the learning and inference models down the line
 `> python world.py` to run on default values: 15 timesteps, behavior of size 4
 <br/>
 There are other command flags worth playing with once the estimator/learning mechanic is built in
+<br/>
+Flags:
+-h -> help
+-s -> behavior size
+-t -> time steps
+-q -> agent types
+-a -> alphas
+-b -> betas
+-m -> mode
 
 #### Under the Hood
 

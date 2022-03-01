@@ -1,6 +1,6 @@
 
-from basic_agent import Basic_Agent
-from other_agent import Other_Agent
+from agent_of_chaos import Agent_of_Chaos
+from agent_weighted import Agent_Weighted
 import numpy as np
 import argparse
 
@@ -10,7 +10,7 @@ class World():
     World holds state data.
     """
 
-    def __init__(self, behavior_size=4, time=15):
+    def __init__(self, behavior_size=4, time=15, agent="chaos", alphas=[], betas=[]):
         if not behavior_size:
             self.behavior_size = 4
         elif behavior_size < 1:
@@ -25,6 +25,17 @@ class World():
             self.time = 15
         else:
             self.time = int(time)
+        self.type = agent
+        if not alphas:
+            self.alphas = [0.1, 0.1]
+        else:
+            self.alphas = alphas
+        if not betas:
+            self.betas = [0.1, 0.1]
+        else:
+            self.betas = betas
+        self.alphas = []
+        self.betas = []
         self.agents = []
         self.b_priors = []
         self.behaviors = []
@@ -32,18 +43,28 @@ class World():
         self.errors = []
         self.costs = []
 
-    def create_agents(self, type="basic"):
+    def create_agents(self):
         '''
         Generate the agents.
         '''
         # later on we can add more agents
         num_agents = 2
-        if type == "basic":
+        if self.type == "chaos":
             for i in range(num_agents):
-                self.agents.append(Basic_Agent(self.behavior_size))
+                if i+1 < len(self.alphas) and i+1 < len(self.betas):
+                    self.agents.append(Agent_of_Chaos(
+                        self.behavior_size, self.alphas[i], self.betas[i]))
+                else:
+                    self.agents.append(Agent_of_Chaos(
+                        self.behavior_size, 0.1, 0.1))
         else:
             for i in range(num_agents):
-                self.agents.append(Other_Agent(self.behavior_size))
+                if i+1 < len(self.alphas) and i+1 < len(self.betas):
+                    self.agents.append(Agent_Weighted(
+                        self.behavior_size, self.alphas[i], self.betas[i]))
+                else:
+                    self.agents.append(Agent_Weighted(
+                        self.behavior_size, 0.1, 0.1))
 
     def run(self):
         '''
@@ -108,19 +129,20 @@ def main():
     '''parser.add_argument("-n", "--num_agents", type=int,
                         metavar="num_agents", help="number of agents in the experiment")
     '''
-    parser.add_argument("-b", "--behavior_size", type=int,
+    parser.add_argument("-s", "--behavior_size", type=int,
                         metavar="behavior_size", help="size of behavior vector")
     parser.add_argument("-t", "--time", type=int,
                         metavar="time", help="number of time steps")
-    parser.add_argument("-a", "--agent", type=str,
+    parser.add_argument("-q", "--agent", type=str, nargs='*',
                         metavar="agent", help="type of agents to be used: basic, other")
-    parser.add_argument("-p", "--alpha", type=int,
+    parser.add_argument("-a", "--alphas", type=int, nargs='*',
                         metavar="alpha", help="prior learning rate: 0.001 - 1")
-    parser.add_argument("-c", "--beta", type=int,
+    parser.add_argument("-b", "--betas", type=int, nargs='*',
                         metavar="beta", help="conformity learning rate: 0.001 - 1")
 
     args = parser.parse_args()
-    world = World(args.behavior_size, args.time)
+    world = World(args.behavior_size, args.time,
+                  args.agent, args.alphas, args.betas)
     world.create_agents()
     world.run()
     world.get_results()

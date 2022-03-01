@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 
-class Basic_Agent():
+class Agent_Weighted():
     """
     This general agent has an action-cost curve determining likelihood of action given its cost,
     size of state (determines behavior richness), and an inference model for guessing the behavioral priors of other agents whose
@@ -104,14 +104,26 @@ class Basic_Agent():
         # JT - is this adjusting to move self.world_pred closer to the previous self.world? This seems like it's updating randomly instead.
         '''
         Adjust prediction of world states based on prediction error.
+        Uses alternative weighted average to get vector of errors.
         '''
-        pred_error = self.behavior_prediction_error()
-        threshold = self.action_cost(pred_error)
-        if pred_error > threshold:
-            b = random.choice([-1, 1]) * self.beta
-            self.world_pred = [[abs(i - b) if abs(i - b)
-                               <= 1 else i for i in self.world_pred[0]]]
-            self.metabolism += pred_error
+        weighted_history = [0]*self.state_size
+        count = 0
+        for i in range(len(self.world), -1, -1):
+            if count >= 4:
+                break
+            w = 4 - count
+            for j in len(self.world[i]):
+                weighted_history[j] = weighted_history[j] + \
+                    (w * self.world[i][j])
+            count += 1
+        # divide by sum of weights
+        weighted_history = [i/10 for i in weighted_history]
+        # get error vector
+        error = [(p-h)*self.beta for p,
+                 h in zip(self.world_pred, weighted_history)]
+        # adjust prediction
+        new_pred = [p-e for p, e in zip(self.world_pred, error)]
+        self.world_pred = new_pred
 
     def get_cost(self):
         '''
@@ -127,7 +139,16 @@ class Basic_Agent():
         # learn when to stop updating self.world_pred to avoid overfitting, since priors (which range from 0-1) will never perfectly match behavior
         # (which is operationalized as 0 or 1). We might want to set this low at first though, to see agents bounce around a bit.
         if self.a_c_fn == "linear":
-            return 0.5
+            return 0.2
 
         else:
-            return 0.5
+            return 0.2
+
+
+'''
+    def directional_error(self):
+        #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
+        dif = [g-h for g, h in zip(self.world[-1], self.world_pred)]
+        e = round(np.sum(dif)/len(dif[0]), 3)
+        return e
+'''

@@ -21,13 +21,21 @@ inference.py - will have the learning and inference models down the line
 <br/>
 There are other command flags worth playing with once the estimator/learning mechanic is built in
 <br/>
+<br/>
 Flags:
+<br/>
 -h -> help
+<br/>
 -s -> behavior size
+<br/>
 -t -> time steps
+<br/>
 -q -> agent types
+<br/>
 -a -> alphas
+<br/>
 -b -> betas
+<br/>
 -m -> mode
 
 #### Under the Hood

@@ -15,7 +15,7 @@ inference.py - will have the learning and inference models down the line
 
 `> python world.py -h` for help
 <br/>
-`> python world.py -b 5 -t 20 -q "chaos" "average", -a 0.3 0.4` for an experiment that runs for 20 timesteps, behavior of size 5, with a chaos and average agent with their respective alphas set to 0.3 and 0.4
+`> python world.py -b 5 -t 20 -q "chaos" "average" -a 0.3 0.4` for an experiment that runs for 20 timesteps, behavior of size 5, with a chaos and average agent with their respective alphas set to 0.3 and 0.4
 <br/>
 `> python world.py` to run on default values: 15 timesteps, behavior of size 4, chaos agents, alphas and betas set to 0.5
 <br/>

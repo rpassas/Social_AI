@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 
-class Agent_Weighted():
+class Agent_Dummy():
     """
     This general agent has an action-cost curve determining likelihood of action given its cost,
     size of state (determines behavior richness), and an inference model for guessing the behavioral priors of other agents whose
@@ -17,17 +17,19 @@ class Agent_Weighted():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=5, alpha=0.5, beta=0.5, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=0, beta=0, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
-        self.state_size = state_size
+        if state_size < 0:
+            self.state_size = 3
+        else:
+            self.state_size = state_size
         # behavioral priors
-        self.b_priors = np.random.rand(1, state_size).round(3)
+        self.b_priors = np.asarray([random.randint(0, 1)
+                                   for i in range(self.state_size)])
         # current behavior
         self.behavior = []
         # estimate of world state parameters
-        self.world_pred = self.b_priors
-        # JT - predictions about the other agent are set to be equal to the agent's behavioral priors. We should set these independently I think.
-        # So that would just be np.random.rand(1, state_size).round(3) again.
+        self.world_pred = np.random.rand(1, state_size).round(3)[0]
         # history of world states
         self.world = []
         # metabolic cost so far (accrued via learning)
@@ -37,22 +39,15 @@ class Agent_Weighted():
         # function for estimating parameters
 
         # priors adjustment rate
-        # JT - Should alpha and beta be set to 0.001 if < .001 ?
-        if alpha > 1 or alpha < 0.001:
-            self.alpha = 0.5
-        else:
-            self.alpha = alpha
+        self.alpha = 0
         # estimates adjustment rate
-        if beta > 1 or beta < 0.001:
-            self.beta = 0.5
-        else:
-            self.beta = beta
+        self.beta = 0
 
     def make_behavior(self):
         '''
         Generate actual behavior (list of 0/1) from priors
         '''
-        return np.random.binomial(1, self.b_priors)
+        return self.b_priors
 
     def make_prediction(self):
         '''
@@ -79,8 +74,8 @@ class Agent_Weighted():
         '''
         #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
         dif = [np.asarray([abs(g-h)
-                           for g, h in zip(self.world[-1][0], self.world_pred[0])])]
-        e = round(np.sum(dif)/len(dif[0]), 3)
+                           for g, h in zip(self.world[-1], self.world_pred)])][0]
+        e = round(np.sum(dif)/len(dif), 3)
         return e
 
     def learn_conform(self):
@@ -92,10 +87,10 @@ class Agent_Weighted():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            a = random.choice([-1, 1]) * pred_error * self.alpha
-            r = round(random.uniform(a, 1), 3)
+            magnitude = random.choice([-1, 1]) * pred_error
+            r = round(random.uniform(0, magnitude), 3) * self.alpha
             self.b_priors = [np.asarray([
-                abs(i - r) if abs(i - r) <= 1 else i for i in self.b_priors[0]])]
+                abs(i - r) if abs(i - r) <= 1 else i for i in self.b_priors])][0]
             self.metabolism += pred_error
 
     def learn_predict_world(self):
@@ -104,26 +99,13 @@ class Agent_Weighted():
         # JT - is this adjusting to move self.world_pred closer to the previous self.world? This seems like it's updating randomly instead.
         '''
         Adjust prediction of world states based on prediction error.
-        Uses alternative weighted average to get vector of errors.
         '''
-        weighted_history = [0]*self.state_size
-        count = 0
-        for i in range(len(self.world), -1, -1):
-            if count >= 4:
-                break
-            w = 4 - count
-            for j in len(self.world[i]):
-                weighted_history[j] = weighted_history[j] + \
-                    (w * self.world[i][j])
-            count += 1
-        # divide by sum of weights
-        weighted_history = [i/10 for i in weighted_history]
-        # get error vector
-        error = [(p-h)*self.beta for p,
-                 h in zip(self.world_pred, weighted_history)]
-        # adjust prediction
-        new_pred = [p-e for p, e in zip(self.world_pred, error)]
-        self.world_pred = new_pred
+        pred_error = self.behavior_prediction_error()
+        threshold = self.action_cost(pred_error)
+        if pred_error > threshold:
+            b = random.choice([-1, 1]) * self.beta
+            self.world_pred = [abs(i - b) if abs(i - b)
+                               <= 1 else i for i in self.world_pred]
 
     def get_cost(self):
         '''
@@ -144,11 +126,20 @@ class Agent_Weighted():
         else:
             return 0.2
 
+    def get_type(self):
+        '''
+        Get the agent type.
+        '''
+        return "dummy"
 
-'''
-    def directional_error(self):
-        #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
-        dif = [g-h for g, h in zip(self.world[-1], self.world_pred)]
-        e = round(np.sum(dif)/len(dif[0]), 3)
-        return e
-'''
+    def get_alpha(self):
+        '''
+        Get the alpha value.
+        '''
+        return self.alpha
+
+    def get_beta(self):
+        '''
+        Get the beta value.
+        '''
+        return self.beta

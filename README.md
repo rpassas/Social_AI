@@ -35,8 +35,6 @@ Flags:
 -a -> alphas
 <br/>
 -b -> betas
-<br/>
--m -> mode
 
 #### Under the Hood
 

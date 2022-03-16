@@ -2,6 +2,7 @@
 from agent_of_chaos import Agent_of_Chaos
 from agent_average import Agent_Average
 from agent_dummy import Agent_Dummy
+from agent_with_model import Agent_with_Model
 import numpy as np
 import argparse
 
@@ -11,7 +12,7 @@ class World():
     World holds state data.
     """
 
-    def __init__(self, behavior_size=3, time=15, agent=["chaos", "chaos"], alphas=[], betas=[], n=2):
+    def __init__(self, behavior_size=3, time=15, agent=["chaos", "chaos"], alphas=[], betas=[], seed=[666, 4], memory=[4, 4], n=2):
         # argparse will make unfilled optional args 'None', so perform checks
         # behavior size
         if not behavior_size:
@@ -57,6 +58,22 @@ class World():
                 self.betas = betas
         else:
             self.betas = [0.5]*self.n
+        # random seed
+        if seed:
+            if len(seed) < self.n:
+                self.seed = [666]*self.n
+            else:
+                self.seed = seed
+        else:
+            self.seed = [666]*self.n
+        # memory of the agents
+        if memory:
+            if len(memory) < self.n:
+                self.memory = [4]*self.n
+            else:
+                self.memory = memory
+        else:
+            self.memory = [4]*self.n
         # variables to be filled as the experiment runs
         self.agents = []
         self.b_priors = []
@@ -78,7 +95,10 @@ class World():
                     self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
             elif self.type[n-1] == "average":
                 self.agents.append(Agent_Average(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
+                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory))
+            elif self.type[n-1] == "model":
+                self.agents.append(Agent_with_Model(
+                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory))
             else:
                 self.agents.append(Agent_Dummy(
                     self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))

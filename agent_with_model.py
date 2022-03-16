@@ -2,10 +2,10 @@ import numpy as np
 import random
 
 
-class Agent_Average():
+class Agent_with_Model():
     """
-    This agent uses memory to average its most recent observed behaviors and adjust its previous
-    prediction priors using the average. 
+    This agent has an internal model, consisting of a covariance matrix from which it can draw from
+    to output behavior and adjust based on errors. An additional matrix determines attention.
 
     """
     # TODO: implement inference and cost functions in separate classes
@@ -18,10 +18,6 @@ class Agent_Average():
         else:
             self.state_size = state_size
         np.random.seed(seed)
-        # internal model
-        self.model = np.random.random((self.state_size, self.state_size))
-        # attention model
-        self.attention = np.identity(self.state_size)
         # behavioral priors
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
         # current behavior
@@ -116,6 +112,7 @@ class Agent_Average():
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
+
         weighted_history = [0]*self.state_size
         count = 0
         for i in range(len(self.world)-1, -1, -1):

@@ -202,13 +202,15 @@ def main():
                         metavar="alpha", help="prior learning rate: 0.001 - 1")
     parser.add_argument("-b", "--beta", type=float, nargs='+',
                         metavar="beta", help="conformity learning rate: 0.001 - 1")
-    parser.add_argument("-r", "--seed", type=int,
+    parser.add_argument("-r", "--seed", type=int, nargs='+',
                         metavar="seed", help="random seed for generating priors")
+    parser.add_argument("-m", "--memory", type=int, nargs='+',
+                        metavar="memory", help="how far back can an agent consider other's history")
 
     args = parser.parse_args()
 
     world = World(args.behavior_size, args.time,
-                  args.agent, args.alpha, args.beta, args.seed)
+                  args.agent, args.alpha, args.beta, args.seed, args.memory)
     world.create_agents()
     world.run()
     world.print_results()

@@ -198,15 +198,17 @@ def main():
                         metavar="time", help="number of time steps")
     parser.add_argument("-q", "--agent", type=str, nargs='+',
                         metavar="agent", help="type of agents to be used: chaos, average, dummy, static")
-    parser.add_argument("-a", "--alphas", type=float, nargs='+',
+    parser.add_argument("-a", "--alpha", type=float, nargs='+',
                         metavar="alpha", help="prior learning rate: 0.001 - 1")
-    parser.add_argument("-b", "--betas", type=float, nargs='+',
+    parser.add_argument("-b", "--beta", type=float, nargs='+',
                         metavar="beta", help="conformity learning rate: 0.001 - 1")
+    parser.add_argument("-r", "--seed", type=int,
+                        metavar="seed", help="random seed for generating priors")
 
     args = parser.parse_args()
 
     world = World(args.behavior_size, args.time,
-                  args.agent, args.alphas, args.betas)
+                  args.agent, args.alpha, args.beta, args.seed)
     world.create_agents()
     world.run()
     world.print_results()

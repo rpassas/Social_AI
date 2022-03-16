@@ -17,12 +17,13 @@ class Agent_of_Chaos():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=3, alpha=0.5, beta=0.5, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=0.5, beta=0.5, seed=666, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         if state_size < 0:
             self.state_size = 3
         else:
             self.state_size = state_size
+        np.random.seed(seed)
         # behavioral priors
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
         # current behavior

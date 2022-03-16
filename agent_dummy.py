@@ -17,7 +17,7 @@ class Agent_Dummy():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=3, alpha=0, beta=0, seed=666, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=0, beta=0, seed=666, memory=1, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         if state_size < 0:
             self.state_size = 3
@@ -33,6 +33,9 @@ class Agent_Dummy():
         self.world_pred = np.random.rand(1, state_size).round(3)[0]
         # history of world states
         self.world = []
+        # how much of world is considered for current prediction
+        # TODO this is useless, doesnt apply
+        self.memory = 1
         # metabolic cost so far (accrued via learning)
         self.metabolism = 0.0
         # action cost function

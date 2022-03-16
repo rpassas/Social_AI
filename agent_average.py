@@ -17,7 +17,7 @@ class Agent_Average():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=3, alpha=0.5, beta=0.5, seed=666, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=1, beta=1, seed=666, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         if state_size < 0:
             self.state_size = 3
@@ -32,6 +32,13 @@ class Agent_Average():
         self.world_pred = np.random.rand(1, state_size).round(3)[0]
         # history of world states
         self.world = []
+        # how much of world is considered for current prediction
+        if memory < 0:
+            self.memory = 1
+        elif memory > 50:
+            self.memory = 50
+        else:
+            self.memory = memory
         # metabolic cost so far (accrued via learning)
         self.metabolism = 0.0
         # action cost function
@@ -115,7 +122,7 @@ class Agent_Average():
         count = 0
         for i in range(len(self.world)-1, -1, -1):
             # look back four instances
-            if count >= 4:
+            if count >= self.memory:
                 break
             # weight
             #w = 4 - count

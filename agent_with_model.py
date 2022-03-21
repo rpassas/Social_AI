@@ -24,6 +24,8 @@ class Agent_with_Model():
         self.behavior = []
         # estimate of world state parameters
         self.world_pred = np.random.rand(1, state_size).round(3)[0]
+        # past predictions
+        self.past_predictions = []
         # history of world states
         self.world = []
         # how much of world is considered for current prediction
@@ -64,8 +66,9 @@ class Agent_with_Model():
         '''
         Generate actual world prediction (list of 0/1) from priors
         '''
-        # return np.random.binomial(1, self.world_pred)
-        return self.world_pred
+        p = np.random.binomial(1, self.world_pred)
+        self.past_predictions.append(p)
+        return p
 
     def get_world(self, world):
         '''
@@ -83,11 +86,6 @@ class Agent_with_Model():
         '''
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         '''
-        #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
-        dif = [np.asarray([abs(g-h)
-                           for g, h in zip(self.world[-1], self.world_pred)])][0]
-        e = round(np.sum(dif)/len(dif), 3)
-        return e
 
     def learn_conform(self):
         # TODO: this is not learning, just a placeholder heuristic
@@ -95,47 +93,14 @@ class Agent_with_Model():
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
-        pred_error = self.behavior_prediction_error()
-        threshold = self.action_cost(pred_error)
-        if pred_error > threshold:
-            magnitude = random.choice([-1, 1]) * pred_error
-            r = round(random.uniform(0, magnitude), 3) * self.alpha
-            self.b_priors = [np.asarray([
-                abs(i - r) if abs(i - r) <= 1 else i for i in self.b_priors])][0]
-            self.metabolism += pred_error
 
     def learn_predict_world(self):
         # TODO: this is not learning, just a placeholder heuristic
         # the arbitrary cut off via the action_cost maybe graded rather than all or nothing and still needs to be implemented
-        # JT - is this adjusting to move self.world_pred closer to the previous self.world? This seems like it's updating randomly instead.
         '''
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
-
-        weighted_history = [0]*self.state_size
-        count = 0
-        for i in range(len(self.world)-1, -1, -1):
-            # look back four instances
-            if count >= self.memory:
-                break
-            # weight
-            #w = 4 - count
-            w = 1
-            # weighted sum
-            for j in range(len(self.world[i])):
-                weighted_history[j] = weighted_history[j] + \
-                    (w * self.world[i][j])
-            count += 1
-        # divide by sum of weights
-        #weighted_history = [i/10 for i in weighted_history]
-        weighted_history = [i/count for i in weighted_history]
-        # get error vector
-        error = [(p-h)*self.beta for p,
-                 h in zip(self.world_pred, weighted_history)]
-        # adjust prediction
-        new_pred = [(p-e).round(3) for p, e in zip(self.world_pred, error)]
-        self.world_pred = new_pred
 
     def get_cost(self):
         '''

@@ -111,7 +111,6 @@ class Agent_Average():
     def learn_predict_world(self):
         # TODO: this is not learning, just a placeholder heuristic
         # the arbitrary cut off via the action_cost maybe graded rather than all or nothing and still needs to be implemented
-        # JT - is this adjusting to move self.world_pred closer to the previous self.world? This seems like it's updating randomly instead.
         '''
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.

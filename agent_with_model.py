@@ -1,5 +1,5 @@
 import numpy as np
-import random
+import math
 
 
 class Agent_with_Model():
@@ -20,6 +20,8 @@ class Agent_with_Model():
         np.random.seed(seed)
         # behavioral priors
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
+        # prior priors
+        self.past_priors = []
         # current behavior
         self.behavior = []
         # estimate of world state parameters
@@ -55,11 +57,14 @@ class Agent_with_Model():
             self.beta = 0.01
         else:
             self.beta = beta
+        # attention matrix
+        self.attn = np.identity(self.state_size)
 
     def make_behavior(self):
         '''
         Generate actual behavior (list of 0/1) from priors
         '''
+        self.past_priors.append(self.b_priors)
         return np.random.binomial(1, self.b_priors)
 
     def make_prediction(self):
@@ -85,22 +90,44 @@ class Agent_with_Model():
     def behavior_prediction_error(self):
         '''
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
+        Currently just the difference
         '''
+        dif = [np.asarray([g-h
+                           for g, h in zip(self.world_pred, self.world[-1])])][0]
+        e = round(np.sum(dif)/len(dif), 3)
+        return e
 
     def learn_conform(self):
-        # TODO: this is not learning, just a placeholder heuristic
-        # the arbitrary cut off via the action_cost maybe graded rather than all or nothing and still needs to be implemented
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
+        sum_priors = self.past_priors[-1]
+        stability = int(self.alpha * 10)
+        mem = min(stability, len(self.past_priors))
+        for m in range(2, mem):
+            i = -1 * m
+            sum_priors = [g + h for g,
+                          h in zip(sum_priors, self.past_priors[i])]
+        e = self.behavior_prediction_error()
+        exp = self.attn.dot(e)
+        top = sum_priors + sigmoid(exp)
+        self.world_pred = top / (mem + 1)
 
     def learn_predict_world(self):
-        # TODO: this is not learning, just a placeholder heuristic
-        # the arbitrary cut off via the action_cost maybe graded rather than all or nothing and still needs to be implemented
         '''
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
+        sum_pred = self.past_predictions[-1]
+        mem = min(self.memory, len(self.past_predictions))
+        for m in range(2, mem):
+            i = -1 * m
+            sum_pred = [g + h for g,
+                        h in zip(sum_pred, self.past_predictions[i])]
+        e = self.behavior_prediction_error()
+        exp = self.attn.dot(e)
+        top = sum_pred + sigmoid(exp)
+        self.world_pred = top / (mem + 1)
 
     def get_cost(self):
         '''
@@ -140,10 +167,8 @@ class Agent_with_Model():
         return self.beta
 
 
-'''
-    def directional_error(self):
-        #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
-        dif = [g-h for g, h in zip(self.world[-1], self.world_pred)]
-        e = round(np.sum(dif)/len(dif[0]), 3)
-        return e
-'''
+def sigmoid(x):
+    '''
+    Helper sigmoid function
+    '''
+    return 1 / (1 + math.exp(-x))

@@ -45,19 +45,19 @@ class World():
         # alpha is the conformity learning rate
         if alphas:
             if len(alphas) < self.n:
-                self.alphas = [0.5]*self.n
+                self.alphas = [1]*self.n
             else:
                 self.alphas = alphas
         else:
-            self.alphas = [0.5]*self.n
+            self.alphas = [1]*self.n
         # beta is the prediction learning rate
         if betas:
             if len(betas) < self.n:
-                self.betas = [0.5]*self.n
+                self.betas = [1]*self.n
             else:
                 self.betas = betas
         else:
-            self.betas = [0.5]*self.n
+            self.betas = [1]*self.n
         # random seed
         if seed:
             if len(seed) < self.n:
@@ -95,10 +95,13 @@ class World():
                     self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
             elif self.type[n-1] == "average":
                 self.agents.append(Agent_Average(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory))
+                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory[n-1]))
             elif self.type[n-1] == "model":
                 self.agents.append(Agent_with_Model(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory))
+                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory[n-1]))
+            elif self.type[n-1] == "dummy":
+                self.agents.append(Agent_Dummy(
+                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
             else:
                 self.agents.append(Agent_Dummy(
                     self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))

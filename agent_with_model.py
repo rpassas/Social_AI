@@ -1,5 +1,5 @@
 import numpy as np
-import math
+import scipy.linalg
 
 
 class Agent_with_Model():
@@ -8,8 +8,6 @@ class Agent_with_Model():
     to output behavior and adjust based on errors. An additional matrix determines attention.
 
     """
-    # TODO: implement inference and cost functions in separate classes
-    # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
     def __init__(self, state_size=3, alpha=1, beta=1, seed=666, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
@@ -110,7 +108,7 @@ class Agent_with_Model():
                           h in zip(sum_priors, self.past_priors[i])]
         e = self.behavior_prediction_error()
         exp = self.attn.dot(e)
-        top = sum_priors + sigmoid(exp)
+        top = sum_priors + matrix_sigmoid(exp)
         self.world_pred = top / (mem + 1)
 
     def learn_predict_world(self):
@@ -126,7 +124,7 @@ class Agent_with_Model():
                         h in zip(sum_pred, self.past_predictions[i])]
         e = self.behavior_prediction_error()
         exp = self.attn.dot(e)
-        top = sum_pred + sigmoid(exp)
+        top = sum_pred + matrix_sigmoid(exp)
         self.world_pred = top / (mem + 1)
 
     def get_cost(self):
@@ -139,9 +137,6 @@ class Agent_with_Model():
         '''
         Determines willingness to learn based on the cost (error)
         '''
-        # JT - I like the idea that we'll need a threshold, and I think one objective simple objective might be for agents to
-        # learn when to stop updating self.world_pred to avoid overfitting, since priors (which range from 0-1) will never perfectly match behavior
-        # (which is operationalized as 0 or 1). We might want to set this low at first though, to see agents bounce around a bit.
         if self.a_c_fn == "linear":
             return 0.4
 
@@ -167,8 +162,8 @@ class Agent_with_Model():
         return self.beta
 
 
-def sigmoid(x):
+def matrix_sigmoid(x):
     '''
     Helper sigmoid function
     '''
-    return 1 / (1 + math.exp(-x))
+    return 1 / (1 + scipy.linalg.expm(-x))

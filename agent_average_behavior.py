@@ -1,5 +1,4 @@
 import numpy as np
-import random
 
 
 class Agent_Average():
@@ -11,17 +10,15 @@ class Agent_Average():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=666, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=1, beta=1, seed='', memory=4, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         if state_size < 0:
             self.state_size = 3
         else:
             self.state_size = state_size
+        if seed == '':
+            seed = np.random.choice(1000, 1)[0]
         np.random.seed(seed)
-        # internal model
-        self.model = np.random.random((self.state_size, self.state_size))
-        # attention model
-        self.attention = np.identity(self.state_size)
         # behavioral priors
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
         # current behavior
@@ -68,8 +65,8 @@ class Agent_Average():
         '''
         Generate actual world prediction (list of 0/1) from priors
         '''
-        return np.random.binomial(1, self.world_pred)
-        # return self.world_pred
+        # return np.random.binomial(1, self.world_pred)
+        return self.world_pred
 
     def get_world(self, world):
         '''
@@ -102,8 +99,8 @@ class Agent_Average():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            magnitude = random.choice([-1, 1]) * pred_error
-            r = round(random.uniform(0, magnitude), 3) * self.alpha
+            magnitude = np.random.choice([-1, 1]) * pred_error
+            r = round(np.random.uniform(0, magnitude), 3) * self.alpha
             self.b_priors = [np.asarray([
                 abs(i - r) if abs(i - r) <= 1 else i for i in self.b_priors])][0]
             self.metabolism += pred_error
@@ -153,10 +150,10 @@ class Agent_Average():
         # learn when to stop updating self.world_pred to avoid overfitting, since priors (which range from 0-1) will never perfectly match behavior
         # (which is operationalized as 0 or 1). We might want to set this low at first though, to see agents bounce around a bit.
         if self.a_c_fn == "linear":
-            return 0.4
+            return 0.2
 
         else:
-            return 0.4
+            return 0.2
 
     def get_type(self):
         '''

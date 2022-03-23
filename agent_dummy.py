@@ -1,5 +1,4 @@
 import numpy as np
-import random
 
 
 class Agent_Dummy():
@@ -17,16 +16,17 @@ class Agent_Dummy():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=3, alpha=0, beta=0, seed=666, memory=1, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=0, beta=0, seed='', memory=1, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         if state_size < 0:
             self.state_size = 3
         else:
             self.state_size = state_size
         # behavioral priors
-        self.b_priors = np.asarray([random.randint(0, 1)
-                                   for i in range(self.state_size)])
+        if seed == '':
+            seed = np.random.choice(1000, 1)[0]
         np.random.seed(seed)
+        self.b_priors = np.random.rand(1, state_size).round(3)[0]
         # current behavior
         self.behavior = []
         # estimate of world state parameters
@@ -91,8 +91,8 @@ class Agent_Dummy():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            magnitude = random.choice([-1, 1]) * pred_error
-            r = round(random.uniform(0, magnitude), 3) * self.alpha
+            magnitude = np.random.choice([-1, 1]) * pred_error
+            r = round(np.random.uniform(0, magnitude), 3) * self.alpha
             self.b_priors = [np.asarray([
                 abs(i - r) if abs(i - r) <= 1 else i for i in self.b_priors])][0]
             self.metabolism += pred_error
@@ -106,7 +106,7 @@ class Agent_Dummy():
         pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
-            b = random.choice([-1, 1]) * self.beta
+            b = np.random.choice([-1, 1]) * self.beta
             self.world_pred = [abs(i - b) if abs(i - b)
                                <= 1 else i for i in self.world_pred]
 

@@ -224,7 +224,7 @@ def main():
     parser.add_argument("-t", "--time", type=int,
                         metavar="time", help="number of time steps")
     parser.add_argument("-q", "--agent", type=str, nargs='+',
-                        metavar="agent", help="type of agents to be used: chaos, average, dummy, static")
+                        metavar="agent", help="type of agents to be used: chaos, average, dummy, model, prediction")
     parser.add_argument("-a", "--alpha", type=float, nargs='+',
                         metavar="alpha", help="prior learning rate: 0.001 - 1")
     parser.add_argument("-b", "--beta", type=float, nargs='+',

@@ -9,12 +9,14 @@ class Agent_with_Model2():
 
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=666, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=1, beta=1, seed='', memory=4, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         if state_size < 0:
             self.state_size = 3
         else:
             self.state_size = state_size
+        if seed == '':
+            seed = np.random.choice(1000, 1)[0]
         np.random.seed(seed)
         # behavioral priors
         self.b_priors = np.random.rand(1, state_size).round(3)[0]

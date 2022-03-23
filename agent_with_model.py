@@ -112,7 +112,7 @@ class Agent_with_Model():
         e = self.behavior_prediction_error()
         print(e)
         print(self.attn)
-        exp = self.attn * e
+        exp = self.attn @ e
         print(exp)
         top = sum_priors + matrix_sigmoid(exp)
         self.b_priors = top / (mem + 1)
@@ -129,7 +129,7 @@ class Agent_with_Model():
             sum_pred = [g + h for g,
                         h in zip(sum_pred, self.past_predictions[i])]
         e = self.behavior_prediction_error()
-        exp = self.attn * e
+        exp = self.attn @ e
         top = sum_pred + matrix_sigmoid(exp)
         self.world_pred = top / (mem + 1)
 
@@ -173,4 +173,4 @@ def matrix_sigmoid(x):
     Helper sigmoid function
     '''
     print(x)
-    return 1 / (1 + scipy.linalg.expm(-x))
+    return 1 / (1 + np.exp(-x))

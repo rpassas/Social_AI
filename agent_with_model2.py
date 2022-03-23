@@ -2,7 +2,7 @@ import numpy as np
 import scipy.linalg
 
 
-class Agent_with_Model():
+class Agent_with_Model2():
     """
     This agent has an internal model, consisting of a covariance matrix from which it can draw from
     to output behavior and adjust based on errors. An additional matrix determines attention.
@@ -147,7 +147,7 @@ class Agent_with_Model():
         '''
         Get the agent type.
         '''
-        return "model"
+        return "average"
 
     def get_alpha(self):
         '''

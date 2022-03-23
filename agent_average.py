@@ -91,6 +91,7 @@ class Agent_Average():
         dif = [np.asarray([abs(g-h)
                            for g, h in zip(self.world[-1], self.world_pred)])][0]
         e = round(np.sum(dif)/len(dif), 3)
+        print(e)
         return e
 
     def learn_conform(self):

@@ -1,6 +1,7 @@
 
 from agent_of_chaos import Agent_of_Chaos
-from agent_average import Agent_Average
+from agent_average_behavior import Agent_Average
+from agent_average_prediction import Agent_Average_Prediction
 from agent_dummy import Agent_Dummy
 from agent_with_model import Agent_with_Model
 import numpy as np
@@ -95,6 +96,9 @@ class World():
                     self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
             elif self.type[n-1] == "average":
                 self.agents.append(Agent_Average(
+                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory[n-1]))
+            elif self.type[n-1] == "prediction":
+                self.agents.append(Agent_Average_Prediction(
                     self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory[n-1]))
             elif self.type[n-1] == "model":
                 self.agents.append(Agent_with_Model(

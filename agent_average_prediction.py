@@ -2,7 +2,7 @@ import numpy as np
 import random
 
 
-class Agent_Average():
+class Agent_Average_Prediction():
     """
     This agent uses memory to average its most recent observed behaviors and adjust its previous
     prediction priors using the average. 
@@ -41,6 +41,8 @@ class Agent_Average():
         self.metabolism = 0.0
         # action cost function
         self.a_c_fn = action_cost_fn
+        # past predictions
+        self.past_predictions = []
         # function for estimating parameters
 
         # priors adjustment rate
@@ -69,7 +71,10 @@ class Agent_Average():
         Generate actual world prediction (list of 0/1) from priors
         '''
         # return np.random.binomial(1, self.world_pred)
-        return self.world_pred
+        p = np.random.binomial(1, self.world_pred)
+        self.past_predictions.append(p)
+        print(p)
+        return p
 
     def get_world(self, world):
         '''
@@ -126,7 +131,7 @@ class Agent_Average():
             #w = 4 - count
             w = 1
             # weighted sum
-            for j in range(len(self.world[i])):
+            for j in range(len(self.past_predictions[i])):
                 weighted_history[j] = weighted_history[j] + \
                     (w * self.world[i][j])
             count += 1
@@ -163,7 +168,7 @@ class Agent_Average():
         '''
         Get the agent type.
         '''
-        return "average"
+        return "prediction average"
 
     def get_alpha(self):
         '''

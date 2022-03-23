@@ -26,7 +26,7 @@ class Agent_Dummy():
         if seed == '':
             seed = np.random.choice(1000, 1)[0]
         np.random.seed(seed)
-        self.b_priors = np.random.rand(1, state_size).round(3)[0]
+        self.b_priors = np.random.choice(2, state_size)
         # current behavior
         self.behavior = []
         # estimate of world state parameters

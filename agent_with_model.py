@@ -20,14 +20,12 @@ class Agent_with_Model():
     """
 
     def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
-        # size of a state
         assert state_size > 0, "state_size must be > 0"
-        self.state_size = state_size
+        self.state_size = state_size # size of a state
         self.b_priors = np.random.rand(1, state_size).round(3)[0] # generates a new instance of a behavioral prior.
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
-        self.world_pred = np.random.rand(1, state_size).round(
-            3)[0]  # estimate of world state parameters
+        self.world_pred = np.random.rand(1, state_size).round(3)[0]  # estimate of world state parameters
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
         if memory < 0:  # how much of world is considered for current prediction
@@ -36,9 +34,7 @@ class Agent_with_Model():
             self.memory = 50
         else:
             self.memory = memory
-
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
-
         self.a_c_fn = action_cost_fn  # action cost function
         # function for estimating parameters
 

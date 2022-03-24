@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.linalg
 
 
 class Agent_with_Model():

@@ -6,40 +6,40 @@ class Agent_with_Model():
     This agent has an internal model, consisting of a covariance matrix from which it can draw from
     to output behavior and adjust based on errors. An additional matrix determines attention.
 
+    INPUTS:
+        state_size [integer, default=3]: sets size of behavior feature space, N.
+
+
+    VARIABLES:
+        b_priors: N length vector, giving probability (to 3 decimal places) of
+            agent DISPLAYING features of behavior on trial t.
+        behavior: N length vector, indicating presence/absence (1/0) of agent's features of behavior trial t.
+        past_priors: list of N length vectors, each recording b_prior for trial t.
+        world_pred: N length vector, giving estimated probability (to 3 decimal places)
+            of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed='', memory=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
-        if state_size < 0:
-            self.state_size = 3
-        else:
-            self.state_size = state_size
-        if seed == '':
-            seed = np.random.choice(1000, 1)[0]
-        np.random.seed(seed)
-        # behavioral priors
+        assert state_size > 0, "state_size must be > 0"
+        # generates a new instance of a behavioral prior.
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
-        # prior priors
-        self.past_priors = []
-        # current behavior
-        self.behavior = []
-        # estimate of world state parameters
-        self.world_pred = np.random.rand(1, state_size).round(3)[0]
-        # past predictions
-        self.past_predictions = []
-        # history of world states
-        self.world = []
-        # how much of world is considered for current prediction
-        if memory < 0:
+        self.past_priors = []  # stores past behavioral priors.
+        self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
+        self.world_pred = np.random.rand(1, state_size).round(
+            3)[0]  # estimate of world state parameters
+        self.past_predictions = []  # past predictions
+        self.world = []  # history of world states
+        if memory < 0:  # how much of world is considered for current prediction
             self.memory = 1
         elif memory > 50:
             self.memory = 50
         else:
             self.memory = memory
-        # metabolic cost so far (accrued via learning)
-        self.metabolism = 0.0
-        # action cost function
-        self.a_c_fn = action_cost_fn
+
+        self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
+
+        self.a_c_fn = action_cost_fn  # action cost function
         # function for estimating parameters
 
         # priors adjustment rate
@@ -70,9 +70,7 @@ class Agent_with_Model():
         '''
         Generate actual world prediction (list of 0/1) from priors
         '''
-        p = np.random.binomial(1, self.world_pred)
-        self.past_predictions.append(p)
-        return p
+        return self.world_pred
 
     def get_world(self, world):
         '''
@@ -80,7 +78,7 @@ class Agent_with_Model():
         '''
         self.world.append(world)
 
-    def get_priors(self):
+    def get_behav_priors(self):
         '''
         Gets the behavioral priors of the agent.
         '''
@@ -96,6 +94,31 @@ class Agent_with_Model():
         print(dif)
         e = round(np.sum(dif)/len(dif), 3)
         return dif
+
+    def behav_update(self, pred_err, attn_matrix, behav_control, internal_model):
+        '''
+        Adjust behavioral priors to match the world state based on conformity error
+        pred_err = prediction error at time t
+        attn_matrix = attention matrix at time t
+        behav_control = SET PARAMETER, weighting M previous trials into output behavior.
+        internal model = linear transfer function from input information to output behavioral prior.
+        '''
+        sum_priors = self.past_priors[-1]
+        # handle case where not yet enough trials.
+        if len(self.past_priors) < behav_control:
+            behav_control = len(self.past_priors)
+        # START HERE - we're solving hte problem of how to take the average over vectors in np.
+        for m in range(2, mem):
+            i = -1 * m
+            sum_priors = [g + h for g,
+                          h in zip(sum_priors, self.past_priors[i])]
+        e = self.behavior_prediction_error()
+        print(e)
+        print(self.attn)
+        exp = self.attn @ e
+        print(exp)
+        top = sum_priors + matrix_sigmoid(exp)
+        self.b_priors = top / (mem + 1)
 
     def learn_conform(self):
         '''

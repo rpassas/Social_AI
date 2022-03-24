@@ -11,70 +11,51 @@ import argparse
 class World():
     """
     World holds state data.
+
+    INPUTS:
+        state_size [integer, default=3]: sets size of behavior feature space, N.
+        time [integer, default=100]: sets number of experimental trials, t.
+        agent
+        alphas
+        betas
+        seed [integer, default=None]: use an integer seed in order to replicate analyses.
+        memory
+        agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
+
     """
 
-    def __init__(self, behavior_size=3, time=15, agent=["chaos", "chaos"], alphas=[], betas=[], seed=[666, 4], memory=[4, 4], n=2):
+    def __init__(self, state_size=3, time=100, agent=["chaos", "chaos"], alphas=[], betas=[], seed=None, memory=[4, 4], agent_n=2):
         # argparse will make unfilled optional args 'None', so perform checks
-        # behavior size
-        if not behavior_size:
-            self.behavior_size = 3
-        elif behavior_size < 1:
-            print("behavior size must be 1 or more; will be set to 3 (default).")
-            self.behavior_size = 3
-        else:
-            self.behavior_size = int(behavior_size)
-        # length of an experiment
-        if not time:
-            self.time = 15
-        elif time < 1:
-            print("time must be 1 or more; will be set to 10 (default).")
-            self.time = 15
-        else:
-            self.time = int(time)
-        # agent types
-        if not agent:
-            self.type = ["chaos", "chaos"]
-        else:
-            self.type = agent
-        # state dimension
-        if not n:
-            self.n = 3
-        elif n < 1 or n > 25:
-            self.n = 3
-        else:
-            self.n = n
+        assert state_size > 0, "state_size must be > 0"  # behavior size
+        assert time > 0, "time must be > 0"  # length of an experiment
+        assert agent_n >= 2, "agent_n must be >= 2"  # number of agents
+        if seed:
+            np.random.seed(seed)
+
         # alpha is the conformity learning rate
         if alphas:
-            if len(alphas) < self.n:
-                self.alphas = [1]*self.n
+            if len(alphas) < self.agent_n:
+                self.alphas = [1]*self.agent_n
             else:
                 self.alphas = alphas
         else:
-            self.alphas = [1]*self.n
+            self.alphas = [1]*self.agent_n
         # beta is the prediction learning rate
         if betas:
-            if len(betas) < self.n:
-                self.betas = [1]*self.n
+            if len(betas) < self.agent_n:
+                self.betas = [1]*self.agent_n
             else:
                 self.betas = betas
         else:
-            self.betas = [1]*self.n
-        # random seed
-        if seed:
-            if len(seed) < self.n:
-                self.seed = [666]*self.n
-            else:
-                self.seed = seed
-        else:
-            self.seed = [666]*self.n
+            self.betas = [1]*self.agent_n
         # memory of the agents
         if memory:
-            if len(memory) < self.n:
-                self.memory = [4]*self.n
+            if len(memory) < self.agent_n:
+                self.memory = [4]*self.agent_n
             else:
                 self.memory = memory
         else:
-            self.memory = [4]*self.n
+            self.memory = [4]*self.agent_n
         # variables to be filled as the experiment runs
         self.agents = []
         self.b_priors = []
@@ -88,27 +69,27 @@ class World():
         Generate the agents.
         '''
         # later on we can add more agents
-        n = self.n
+        n = self.agent_n
         while n:
             n -= 1
             if self.type[n-1] == "chaos":
                 self.agents.append(Agent_of_Chaos(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
+                    self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))
             elif self.type[n-1] == "average":
                 self.agents.append(Agent_Average(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory[n-1]))
+                    self.state_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.memory[n-1]))
             elif self.type[n-1] == "prediction":
                 self.agents.append(Agent_Average_Prediction(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory[n-1]))
+                    self.state_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.memory[n-1]))
             elif self.type[n-1] == "model":
                 self.agents.append(Agent_with_Model(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.seed[n-1], self.memory[n-1]))
+                    self.state_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.memory[n-1]))
             elif self.type[n-1] == "dummy":
                 self.agents.append(Agent_Dummy(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
+                    self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))
             else:
                 self.agents.append(Agent_Dummy(
-                    self.behavior_size, float(self.alphas[n-1]), float(self.betas[n-1])))
+                    self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))
 
     def run(self):
         '''
@@ -121,7 +102,7 @@ class World():
             behavior = []
             for i in range(len(self.agents)):
                 b = self.agents[i].make_behavior()
-                p = self.agents[i].get_priors()
+                p = self.agents[i].get_behav_priors()
                 behavior.append(b)
                 prior.append(p)
                 # print("behavior of agent {}: ".format(i) + str(behavior))
@@ -135,8 +116,10 @@ class World():
             cost = []
             for i in range(len(self.agents)):
                 if i == 0:
+                    # agent 0 gets agent 1's behavior
                     self.agents[i].get_world(self.behaviors[-1][1])
                 else:
+                    # agent 1 gets agent 0's behavior
                     self.agents[i].get_world(self.behaviors[-1][0])
                 p = self.agents[i].make_prediction()
                 e = self.agents[i].behavior_prediction_error()
@@ -182,9 +165,9 @@ class World():
         pred_T = pred_array.T
         return pred_T
 
-    def get_priors(self):
+    def get_behav_priors(self):
         '''
-        Get a representation of the priors so each list is an agents priors across time.
+        Get a representation of the priors so each list is an agent's behavioral priors across time.
         '''
         prior_array = np.array(self.b_priors)
         prior_T = prior_array.T
@@ -219,8 +202,8 @@ def main():
     '''parser.add_argument("-n", "--num_agents", type=int,
                         metavar="num_agents", help="number of agents in the experiment")
     '''
-    parser.add_argument("-s", "--behavior_size", type=int,
-                        metavar="behavior_size", help="size of behavior vector")
+    parser.add_argument("-s", "--state_size", type=int,
+                        metavar="state_size", help="size of behavior vector")
     parser.add_argument("-t", "--time", type=int,
                         metavar="time", help="number of time steps")
     parser.add_argument("-q", "--agent", type=str, nargs='+',
@@ -236,7 +219,7 @@ def main():
 
     args = parser.parse_args()
 
-    world = World(args.behavior_size, args.time,
+    world = World(args.state_size, args.time,
                   args.agent, args.alpha, args.beta, args.seed, args.memory)
     world.create_agents()
     world.run()
@@ -248,7 +231,7 @@ if __name__ == '__main__':
     The main function called when world.py is run
     from the command line:
 
-    > python world.py 
+    > python world.py
 
     See the usage string for more details.
 

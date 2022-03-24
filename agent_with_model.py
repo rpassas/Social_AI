@@ -22,8 +22,8 @@ class Agent_with_Model():
     def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         assert state_size > 0, "state_size must be > 0"
-        # generates a new instance of a behavioral prior.
-        self.b_priors = np.random.rand(1, state_size).round(3)[0]
+        self.state_size = state_size
+        self.b_priors = np.random.rand(1, state_size).round(3)[0] # generates a new instance of a behavioral prior.
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
         self.world_pred = np.random.rand(1, state_size).round(

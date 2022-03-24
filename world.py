@@ -32,7 +32,7 @@ class World():
         if seed:
             np.random.seed(seed)
 
-        # alpha is the conformity learning rate
+        # alpha is the conformity learning rate TEST
         if alphas:
             if len(alphas) < self.agent_n:
                 self.alphas = [1]*self.agent_n

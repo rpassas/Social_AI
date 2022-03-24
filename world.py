@@ -27,11 +27,13 @@ class World():
     def __init__(self, state_size=3, time=100, agent=["chaos", "chaos"], alphas=[], betas=[], seed=None, memory=[4, 4], agent_n=2):
         # argparse will make unfilled optional args 'None', so perform checks
         assert state_size > 0, "state_size must be > 0"  # behavior size
+        self.state_size = state_size
         assert time > 0, "time must be > 0"  # length of an experiment
+        self.time = time
         assert agent_n >= 2, "agent_n must be >= 2"  # number of agents
+        self.agent_n = agent_n
         if seed:
             np.random.seed(seed)
-
         # alpha is the conformity learning rate
         if alphas:
             if len(alphas) < self.agent_n:

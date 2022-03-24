@@ -28,12 +28,8 @@ class Agent_with_Model():
         self.world_pred = np.random.rand(1, state_size).round(3)[0]  # estimate of world state parameters
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
-        if memory < 0:  # how much of world is considered for current prediction
-            self.memory = 1
-        elif memory > 50:
-            self.memory = 50
-        else:
-            self.memory = memory
+        assert memory > 0, "memory must be > 0" # how much of world is considered for current prediction
+        self.memory = memory
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
         # function for estimating parameters
@@ -63,13 +59,13 @@ class Agent_with_Model():
 
     def make_prediction(self):
         '''
-        Generate actual world prediction (list of 0/1) from priors
+        Generate actual world prediction
         '''
         return self.world_pred
 
     def get_world(self, world):
         '''
-        For adding current world state to the history
+        For adding current world state (i.e. other agent's behavior) to the history
         '''
         self.world.append(world)
 
@@ -82,13 +78,11 @@ class Agent_with_Model():
     def behavior_prediction_error(self):
         '''
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
-        Currently just the difference
+        Returns vector of +/- prediciton error, and average absolute prediction error
         '''
-        dif = [np.asarray([g-h
-                           for g, h in zip(self.world_pred, self.world[-1])])][0]
-        print(dif)
-        e = round(np.sum(dif)/len(dif), 3)
-        return dif
+        dif = self.world_pred - self.world[-1] # array of differences, for each behavioral feature
+        avg_abs_error = round(np.sum(abs(dif))/len(dif), 3) # absolute prediction error across all features
+        return dif, avg_abs_error
 
     def behav_update(self, pred_err, attn_matrix, behav_control, internal_model):
         '''

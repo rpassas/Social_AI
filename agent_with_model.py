@@ -52,8 +52,7 @@ class Agent_with_Model():
             self.beta = 0.01
         else:
             self.beta = beta
-        # attention matrix
-        self.attn = np.identity(self.state_size)
+        self.attn = np.identity(self.state_size) # attention matrix
 
     def make_behavior(self):
         '''

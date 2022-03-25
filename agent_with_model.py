@@ -34,7 +34,7 @@ class Agent_with_Model():
 
         # This is necessary to get people to change their behaviors, or else they'll just remain the same.
         # It doesn't seem to move behavior very much right now though, so we may need to experiment with values.
-        self.behav_model = np.random.rand(state_size, state_size)
+        self.behav_model = np.random.randint(-10, 10, size = (state_size, state_size))
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function

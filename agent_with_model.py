@@ -19,7 +19,7 @@ class Agent_with_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size # size of a state
         self.b_priors = np.random.rand(1, state_size).round(3)[0] # generates a new instance of a behavioral prior.
@@ -30,6 +30,12 @@ class Agent_with_Model():
         self.world = []  # history of world states
         assert memory > 0, "memory must be > 0" # how much of world is considered for current prediction
         self.memory = memory
+        self.behav_control = behav_control
+
+        # This is necessary to get people to change their behaviors, or else they'll just remain the same.
+        # It doesn't seem to move behavior very much right now though, so we may need to experiment with values.
+        self.behav_model = np.random.rand(state_size, state_size)
+
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
         # function for estimating parameters
@@ -84,48 +90,48 @@ class Agent_with_Model():
         avg_abs_error = round(np.sum(abs(dif))/len(dif), 3) # absolute prediction error across all features
         return dif, avg_abs_error
 
-    def behav_update(self, pred_err, attn_matrix, behav_control, internal_model):
-        '''
-        Adjust behavioral priors to match the world state based on conformity error
-        pred_err = prediction error at time t
-        attn_matrix = attention matrix at time t
-        behav_control = SET PARAMETER, weighting M previous trials into output behavior.
-        internal model = linear transfer function from input information to output behavioral prior.
-        '''
-        sum_priors = self.past_priors[-1]
-        # handle case where not yet enough trials.
-        if len(self.past_priors) < behav_control:
-            behav_control = len(self.past_priors)
-        # START HERE - we're solving hte problem of how to take the average over vectors in np.
-        for m in range(2, mem):
-            i = -1 * m
-            sum_priors = [g + h for g,
-                          h in zip(sum_priors, self.past_priors[i])]
-        e = self.behavior_prediction_error()
-        print(e)
-        print(self.attn)
-        exp = self.attn @ e
-        print(exp)
-        top = sum_priors + matrix_sigmoid(exp)
-        self.b_priors = top / (mem + 1)
+    # def behav_update(self, pred_err, attn_matrix, behav_control, internal_model):
+    #     '''
+    #     Adjust behavioral priors to match the world state based on conformity error
+    #     pred_err = prediction error at time t
+    #     attn_matrix = attention matrix at time t
+    #     behav_control = SET PARAMETER, weighting M previous trials into output behavior.
+    #     internal model = linear transfer function from input information to output behavioral prior.
+    #     '''
+    #     sum_priors = self.past_priors[-1]
+    #     # handle case where not yet enough trials.
+    #     if len(self.past_priors) < behav_control:
+    #         behav_control = len(self.past_priors)
+    #     # START HERE - we're solving hte problem of how to take the average over vectors in np.
+    #     for m in range(2, mem):
+    #         i = -1 * m
+    #         sum_priors = [g + h for g,
+    #                       h in zip(sum_priors, self.past_priors[i])]
+    #     dif, avg_abs_error = self.behavior_prediction_error()
+    #     # print(dif)
+    #     # print(self.attn)
+    #     attn_weighted_dif = self.attn @ dif
+    #     # print(attn_weighted_dif)
+    #     top = sum_priors + matrix_sigmoid(self.behav_model @ attn_weighted_dif) # multiply by internal model to get new behavior.
+    #     self.b_priors = top / (mem + 1)
 
     def learn_conform(self):
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
         sum_priors = self.past_priors[-1]
-        stability = int(self.alpha * 10)
+        stability = self.behav_control
         mem = min(stability, len(self.past_priors))
         for m in range(2, mem):
             i = -1 * m
             sum_priors = [g + h for g,
                           h in zip(sum_priors, self.past_priors[i])]
-        e = self.behavior_prediction_error()
-        print(e)
-        print(self.attn)
-        exp = self.attn @ e
-        print(exp)
-        top = sum_priors + matrix_sigmoid(exp)
+        dif, avg_abs_error = self.behavior_prediction_error()
+        # print(dif)
+        # print(self.attn)
+        attn_weighted_dif = self.attn @ dif
+        # print(attn_weighted_dif)
+        top = sum_priors + matrix_sigmoid(self.behav_model @ attn_weighted_dif)
         self.b_priors = top / (mem + 1)
 
     def learn_predict_world(self):
@@ -133,15 +139,18 @@ class Agent_with_Model():
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
-        sum_pred = self.past_predictions[-1]
-        mem = min(self.memory, len(self.past_predictions))
-        for m in range(2, mem):
-            i = -1 * m
-            sum_pred = [g + h for g,
-                        h in zip(sum_pred, self.past_predictions[i])]
-        e = self.behavior_prediction_error()
-        exp = self.attn @ e
-        top = sum_pred + matrix_sigmoid(exp)
+        if len(self.past_predictions) == 0:
+            sum_pred = 0
+            mem = 0
+        else:
+            mem = min(self.memory, len(self.past_predictions))
+            for m in range(2, mem):
+                i = -1 * m
+                sum_pred = [g + h for g,
+                            h in zip(sum_pred, self.past_predictions[i])]
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        top = sum_pred + matrix_sigmoid(attn_weighted_dif)
         self.world_pred = top / (mem + 1)
 
     def get_cost(self):
@@ -183,5 +192,5 @@ def matrix_sigmoid(x):
     '''
     Helper sigmoid function
     '''
-    print(x)
+    # print(x)
     return 1 / (1 + np.exp(-x))

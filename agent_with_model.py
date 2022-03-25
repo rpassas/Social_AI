@@ -67,6 +67,7 @@ class Agent_with_Model():
         '''
         Generate actual world prediction
         '''
+        self.past_predictions.append(self.world_pred)
         return self.world_pred
 
     def get_world(self, world):
@@ -143,6 +144,7 @@ class Agent_with_Model():
             sum_pred = 0
             mem = 0
         else:
+            sum_pred = self.past_predictions[-1]
             mem = min(self.memory, len(self.past_predictions))
             for m in range(2, mem):
                 i = -1 * m

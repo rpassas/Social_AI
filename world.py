@@ -23,12 +23,7 @@ class World():
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
     """
 
-    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"],
-<<<<<<< HEAD
-                 seed=None, memory=[4, 4], behav_control=[4, 4], agent_n=2):
-=======
-        seed=None, memory=[4, 4], behav_control = [4, 4], agent_n=2):
->>>>>>> cb2724ef346763b0670b14ac927efb07c7a1280f
+    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"], seed=None, memory=[4, 4], behav_control=[4, 4], agent_n=2):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks

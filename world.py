@@ -5,6 +5,7 @@ from agent_dummy import Agent_Dummy
 from agent_with_model import Agent_with_Model
 from agent_with_sigmoid_model import Agent_with_Sigmoid_Model
 from agent_with_linear_model import Agent_with_Linear_Model
+from agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
 import numpy as np
 import argparse
 
@@ -69,6 +70,9 @@ class World():
                     self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
             elif self.type[n-1] == "model_lin":
                 self.agents.append(Agent_with_Linear_Model(
+                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+            elif self.type[n-1] == "model_alt":
+                self.agents.append(Agent_with_Alt_Sigmoid_Model(
                     self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
             # elif self.type[n-1] == "chaos":
             #     self.agents.append(Agent_of_Chaos(

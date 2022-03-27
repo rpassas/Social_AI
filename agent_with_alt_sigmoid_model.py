@@ -1,23 +1,14 @@
 import numpy as np
 
 
-class Agent_with_Sigmoid_Model():
+class Agent_with_Alt_Sigmoid_Model():
     """
     This agent has an internal model, consisting of a covariance matrix from which it can draw from
-    to output behavior and adjust based on errors. An additional matrix determines attention.
+    to output behavior and adjust based on errors. An additional matrix determines attention to particular 
+    features within a given state.
 
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
-        memory [integer >= 0, default=4]: sets memory weighting of prior predictions.
-            Prediction error always adjusts from a prior prediction,
-            so memory = 0 includes only weighting from the prior trial.
-            memory > 0 weights the prior by earlier predictions, giving equal weight to each.
-        behav_control [integer >= -1, default = 4]: sets weighting of prior behaviors.
-            Received prediciton error will be linearly transformed into a new behavioral prior.
-            If behav_control is set to -1, then the new behavioral prior is used without further weighting.
-            If behav_control >=0 then earlier behavioral priors are averaged into the new one,
-            behav_control = 0 includes the behavioral prior from trial t, and
-            behav_control > 0 includes behavioral priors from trial t - behav_control.
 
 
     VARIABLES:
@@ -41,20 +32,34 @@ class Agent_with_Sigmoid_Model():
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
         # how much of world is considered for current prediction
-        assert memory >= 0, "memory must be >= 0"
+        assert memory > 0, "memory must be > 0"
         self.memory = memory
-        # how much of world is considered for current prediction
-        assert behav_control >= 0, "memory must be >= -1"
         self.behav_control = behav_control
 
         # This is necessary to get people to change their behaviors, or else they'll just remain the same.
         # It doesn't seem to move behavior very much right now though, so we may need to experiment with values.
-        self.behav_model = np.random.rand(state_size, state_size)
+        # self.behav_model = np.random.randint(-1,
+        #                                     1, size=(state_size, state_size))
+        self.behav_model = np.identity(self.state_size)
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
         # function for estimating parameters
 
+        # priors adjustment rate
+        if alpha > 1 or alpha < 0:
+            self.alpha = 1
+        elif alpha < 0:
+            self.alpha = 0.01
+        else:
+            self.alpha = alpha
+        # estimates adjustment rate
+        if beta > 1 or beta < 0:
+            self.beta = 1
+        elif beta < 0:
+            self.beta = 0.01
+        else:
+            self.beta = beta
         self.attn = np.identity(self.state_size)  # attention matrix
 
     def make_behavior(self):
@@ -88,8 +93,8 @@ class Agent_with_Sigmoid_Model():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
-        dif = self.world_pred - \
-            self.world[-1]  # array of differences, for each behavioral feature
+        dif = self.world[-1] - \
+            self.world_pred  # array of differences, for each behavioral feature
         # absolute prediction error across all features
         avg_abs_error = round(np.sum(abs(dif))/len(dif), 3)
         return dif, avg_abs_error
@@ -136,7 +141,7 @@ class Agent_with_Sigmoid_Model():
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
         top = sum_priors + matrix_sigmoid(self.behav_model @ attn_weighted_dif)
-        self.b_priors = top / (mem + 2)
+        self.b_priors = top / (mem + 1)
 
     def learn_predict_world(self):
         '''
@@ -151,8 +156,24 @@ class Agent_with_Sigmoid_Model():
                         h in zip(sum_pred, self.past_predictions[i])]
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
-        top = sum_pred - 2*(matrix_sigmoid(attn_weighted_dif)-0.5)
-        self.world_pred = top / (mem + 1)
+        #base = np.asarray(sum_pred) / mem
+        #sig = dynamic_sigmoid(base, attn_weighted_dif)
+        sig = dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
+        print("world, pred:")
+        print(self.world[-1])
+        print(self.past_predictions[-1])
+        print("error:")
+        print(dif)
+        print("sig:")
+        print(sig)
+        #sig = matrix_sigmoid(attn_weighted_dif)
+        top = sum_pred + sig
+        p = top / (mem + 1)
+        print("update:")
+        print(self.past_predictions[-1])
+        print(p)
+        print("---")
+        self.world_pred = p
 
     def get_cost(self):
         '''
@@ -191,7 +212,24 @@ class Agent_with_Sigmoid_Model():
 
 def matrix_sigmoid(x):
     '''
-    Helper sigmoid function
+    Helper sigmoid function where the intercept is 0.5
     '''
-    # print(x)
     return 1 / (1 + np.exp(-x))
+
+
+def dynamic_sigmoid(i, x):
+    '''
+    Helper sigmoid function where the intercept is a value of i (list)
+    '''
+    y = np.exp(-x)
+    out = np.asarray([1 / (1 + ((1/i[j]) - 1) * y[j]) for j in range(len(i))])
+    return out
+
+
+def stabilize(x):
+    '''
+    Probably not useful - but keeping it here for now in case it becomes so.
+    Yields magnitude value for x between 0 and 1 where the intercept is 0.
+    '''
+    y = np.array([(-0.5**i)+1 if i > 0 else (-2**i) + 1 for i in x])
+    return y

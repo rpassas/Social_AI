@@ -5,11 +5,8 @@ class Agent_with_Model():
     """
     This agent has an internal model, consisting of a covariance matrix from which it can draw from
     to output behavior and adjust based on errors. An additional matrix determines attention.
-
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
-
-
     VARIABLES:
         b_priors: N length vector, giving probability (to 3 decimal places) of
             agent DISPLAYING features of behavior on trial t.
@@ -21,20 +18,24 @@ class Agent_with_Model():
 
     def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
-        self.state_size = state_size # size of a state
-        self.b_priors = np.random.rand(1, state_size).round(3)[0] # generates a new instance of a behavioral prior.
+        self.state_size = state_size  # size of a state
+        # generates a new instance of a behavioral prior.
+        self.b_priors = np.random.rand(1, state_size).round(3)[0]
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
-        self.world_pred = np.random.rand(1, state_size).round(3)[0]  # estimate of world state parameters
+        self.world_pred = np.random.rand(1, state_size).round(
+            3)[0]  # estimate of world state parameters
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
-        assert memory > 0, "memory must be > 0" # how much of world is considered for current prediction
+        # how much of world is considered for current prediction
+        assert memory > 0, "memory must be > 0"
         self.memory = memory
         self.behav_control = behav_control
 
         # This is necessary to get people to change their behaviors, or else they'll just remain the same.
         # It doesn't seem to move behavior very much right now though, so we may need to experiment with values.
-        self.behav_model = np.random.randint(-10, 10, size = (state_size, state_size))
+        self.behav_model = np.random.randint(-10,
+                                             10, size=(state_size, state_size))
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
@@ -54,7 +55,7 @@ class Agent_with_Model():
             self.beta = 0.01
         else:
             self.beta = beta
-        self.attn = np.identity(self.state_size) # attention matrix
+        self.attn = np.identity(self.state_size)  # attention matrix
 
     def make_behavior(self):
         '''
@@ -87,8 +88,10 @@ class Agent_with_Model():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
-        dif = self.world_pred - self.world[-1] # array of differences, for each behavioral feature
-        avg_abs_error = round(np.sum(abs(dif))/len(dif), 3) # absolute prediction error across all features
+        dif = self.world_pred - \
+            self.world[-1]  # array of differences, for each behavioral feature
+        # absolute prediction error across all features
+        avg_abs_error = round(np.sum(abs(dif))/len(dif), 3)
         return dif, avg_abs_error
 
     # def behav_update(self, pred_err, attn_matrix, behav_control, internal_model):

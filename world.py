@@ -1,9 +1,10 @@
-
 from agent_of_chaos import Agent_of_Chaos
 from agent_average_behavior import Agent_Average
 from agent_average_prediction import Agent_Average_Prediction
 from agent_dummy import Agent_Dummy
 from agent_with_model import Agent_with_Model
+from agent_with_sigmoid_model import Agent_with_Sigmoid_Model
+from agent_with_linear_model import Agent_with_Linear_Model
 import numpy as np
 import argparse
 
@@ -11,7 +12,6 @@ import argparse
 class World():
     """
     World holds state data.
-
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
         time [integer, default=100]: sets number of experimental trials, t.
@@ -21,11 +21,10 @@ class World():
         seed [integer, default=None]: use an integer seed in order to replicate analyses.
         memory
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
-
     """
 
-    def __init__(self, state_size=3, time=100, agent=["model", "model"],
-        seed=None, memory=[4, 4], behav_control = [4, 4], agent_n=2):
+    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"],
+                 seed=None, memory=[4, 4], behav_control=[4, 4], agent_n=2):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -36,16 +35,18 @@ class World():
         assert agent_n >= 2, "agent_n must be >= 2"  # number of agents
         self.agent_n = agent_n
         self.type = agent
-        assert len(memory) == self.agent_n, 'memory must be a list, with as many entries as agent_n'
+        assert len(
+            memory) == self.agent_n, 'memory must be a list, with as many entries as agent_n'
         for i in memory:
             assert type(i) == int, 'memory entries must be integers'
-        self.memory = memory # memory of the agents
-        assert len(behav_control) == self.agent_n, 'behav_control must be a list, with as many entries as agent_n'
+        self.memory = memory  # memory of the agents
+        assert len(
+            behav_control) == self.agent_n, 'behav_control must be a list, with as many entries as agent_n'
         for i in behav_control:
             assert type(i) == int, 'behav_control entries must be integers'
-        self.behav_control = behav_control # behavioral control of the agents
+        self.behav_control = behav_control  # behavioral control of the agents
 
-        ###### variables to be filled as the experiment runs
+        # variables to be filled as the experiment runs
         self.agents = []
         self.b_priors = []
         self.behaviors = []
@@ -63,6 +64,12 @@ class World():
             n -= 1
             if self.type[n-1] == "model":
                 self.agents.append(Agent_with_Model(
+                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+            elif self.type[n-1] == "model_sig":
+                self.agents.append(Agent_with_Sigmoid_Model(
+                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+            elif self.type[n-1] == "model_lin":
+                self.agents.append(Agent_with_Linear_Model(
                     self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
             # elif self.type[n-1] == "chaos":
             #     self.agents.append(Agent_of_Chaos(
@@ -222,11 +229,8 @@ if __name__ == '__main__':
     """
     The main function called when world.py is run
     from the command line:
-
     > python world.py
-
     See the usage string for more details.
-
     > python ./world.py --help
     """
     main()

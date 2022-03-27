@@ -4,6 +4,8 @@ from agent_average_behavior import Agent_Average
 from agent_average_prediction import Agent_Average_Prediction
 from agent_dummy import Agent_Dummy
 from agent_with_model import Agent_with_Model
+from agent_with_sigmoid_model import Agent_with_Sigmoid_Model
+from agent_with_linear_model import Agent_with_Linear_Model
 import numpy as np
 import argparse
 
@@ -24,7 +26,7 @@ class World():
 
     """
 
-    def __init__(self, state_size=3, time=100, agent=["model", "model"],
+    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"],
         seed=None, memory=[4, 4], behav_control = [4, 4], agent_n=2):
         if seed:
             np.random.seed(seed)
@@ -63,6 +65,12 @@ class World():
             n -= 1
             if self.type[n-1] == "model":
                 self.agents.append(Agent_with_Model(
+                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+            elif self.type[n-1] == "model_sig":
+                self.agents.append(Agent_with_Sigmoid_Model(
+                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+            elif self.type[n-1] == "model_lin":
+                self.agents.append(Agent_with_Linear_Model(
                     self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
             # elif self.type[n-1] == "chaos":
             #     self.agents.append(Agent_of_Chaos(

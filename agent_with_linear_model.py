@@ -29,18 +29,22 @@ class Agent_with_Linear_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=4, behav_control=4, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
-        self.state_size = state_size # size of a state
-        self.b_priors = np.random.rand(1, state_size).round(3)[0] # generates a new instance of a behavioral prior.
+        self.state_size = state_size  # size of a state
+        # generates a new instance of a behavioral prior.
+        self.b_priors = np.random.rand(1, state_size).round(3)[0]
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
-        self.world_pred = np.random.rand(1, state_size).round(3)[0]  # estimate of world state parameters
+        self.world_pred = np.random.rand(1, state_size).round(
+            3)[0]  # estimate of world state parameters
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
-        assert memory >= 0, "memory must be >= 0" # how much of world is considered for current prediction
-        self.memory = memory
-        assert behav_control >= 0, "memory must be >= -1" # how much of world is considered for current prediction
+        # how much of world is considered for current prediction
+        assert memory >= 0, "memory must be >= 0"
+        self.memory = int(memory)
+        # how much of world is considered for current prediction
+        assert behav_control >= 0, "memory must be >= -1"
         self.behav_control = behav_control
 
         # This is necessary to get people to change their behaviors, or else they'll just remain the same.
@@ -51,7 +55,7 @@ class Agent_with_Linear_Model():
         self.a_c_fn = action_cost_fn  # action cost function
         # function for estimating parameters
 
-        self.attn = np.identity(self.state_size) # attention matrix
+        self.attn = np.identity(self.state_size)  # attention matrix
 
     def make_behavior(self):
         '''
@@ -84,8 +88,10 @@ class Agent_with_Linear_Model():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
-        dif = self.world_pred - self.world[-1] # array of differences, for each behavioral feature
-        avg_abs_error = round(np.sum(abs(dif))/len(dif), 3) # absolute prediction error across all features
+        dif = self.world_pred - \
+            self.world[-1]  # array of differences, for each behavioral feature
+        # absolute prediction error across all features
+        avg_abs_error = round(np.sum(abs(dif))/len(dif), 3)
         return dif, avg_abs_error
 
     # def behav_update(self, pred_err, attn_matrix, behav_control, internal_model):
@@ -120,7 +126,8 @@ class Agent_with_Linear_Model():
         if self.behav_control < 0:
             sum_priors = 0
         else:
-            sum_priors = self.past_priors[-1] # get first vector, if self control used.
+            # get first vector, if self control used.
+            sum_priors = self.past_priors[-1]
         mem = min(self.behav_control, len(self.past_priors))
         for m in range(2, mem+1):
             i = -1 * m
@@ -136,7 +143,7 @@ class Agent_with_Linear_Model():
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
-        sum_pred = self.past_predictions[-1] # always include last memory from current trial t.
+        sum_pred = self.past_predictions[-1]  # always include last memory from current trial t.
         mem = min(self.memory, len(self.past_predictions))
         for m in range(2, mem+1):
             i = -1 * m
@@ -173,13 +180,13 @@ class Agent_with_Linear_Model():
         '''
         Get the alpha value.
         '''
-        return self.alpha
+        return 1
 
     def get_beta(self):
         '''
         Get the beta value.
         '''
-        return self.beta
+        return 1
 
 
 def matrix_sigmoid(x):

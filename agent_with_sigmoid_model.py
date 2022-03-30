@@ -29,7 +29,7 @@ class Agent_with_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=4, behav_control=4, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -42,7 +42,7 @@ class Agent_with_Sigmoid_Model():
         self.world = []  # history of world states
         # how much of world is considered for current prediction
         assert memory >= 0, "memory must be >= 0"
-        self.memory = memory
+        self.memory = int(memory)
         # how much of world is considered for current prediction
         assert behav_control >= 0, "memory must be >= -1"
         self.behav_control = behav_control
@@ -144,7 +144,7 @@ class Agent_with_Sigmoid_Model():
         Uses alternative weighted average to get vector of errors.
         '''
         sum_pred = self.past_predictions[-1]  # always include last memory from current trial t.
-        mem = min(self.memory, len(self.past_predictions))
+        mem = int(min(self.memory, len(self.past_predictions)))
         for m in range(2, mem+1):
             i = -1 * m
             sum_pred = [g + h for g,
@@ -180,13 +180,13 @@ class Agent_with_Sigmoid_Model():
         '''
         Get the alpha value.
         '''
-        return self.alpha
+        return 1
 
     def get_beta(self):
         '''
         Get the beta value.
         '''
-        return self.beta
+        return 1
 
 
 def matrix_sigmoid(x):

@@ -16,9 +16,7 @@ class World():
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
         time [integer, default=100]: sets number of experimental trials, t.
-        agent
-        alphas
-        betas
+        agent [strings]: 
         seed [integer, default=None]: use an integer seed in order to replicate analyses.
         memory
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
@@ -181,8 +179,8 @@ class World():
         '''
         for a in self.agents:
             print("agent type:   {}".format(a.get_type()))
-            print("agent alpha:   {}".format(a.get_alpha()))
-            print("agent beta:   {}".format(a.get_beta()))
+            #print("agent alpha:   {}".format(a.get_alpha()))
+            #print("agent beta:   {}".format(a.get_beta()))
             print("  ---  ")
 
         print("\n")

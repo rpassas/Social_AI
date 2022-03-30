@@ -176,18 +176,6 @@ class Agent_with_Sigmoid_Model():
         '''
         return "model"
 
-    def get_alpha(self):
-        '''
-        Get the alpha value.
-        '''
-        return 1
-
-    def get_beta(self):
-        '''
-        Get the beta value.
-        '''
-        return 1
-
 
 def matrix_sigmoid(x):
     '''

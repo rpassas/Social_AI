@@ -32,7 +32,7 @@ class Agent_with_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, memory=4, behav_control=4, model_var=1, action_cost_fn='linear'):
+    def __init__(self, state_size=3, memory=4, behav_control=4, model_var=0, action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -44,17 +44,24 @@ class Agent_with_Sigmoid_Model():
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
         # how much of world is considered for current prediction
+        assert memory >= 0, "memory must be >= 0"
+        self.memory = int(memory)
+        # how much of world is considered for current prediction
         assert behav_control >= 0, "memory must be >= -1"
         self.behav_control = behav_control
+        # model_var or variance of the model determines the range of values in behav_model
+        assert model_var <= 10, "model variance must be at most 10"
+        assert model_var >= 0, "model variance must be at least 0"
+        self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         if model_var == 0:
             self.behav_model = np.identity(state_size)
         else:
-            self.behav_model = np.random.randint(-1*self.model_var, self.model_var, size=state_size)
+            self.behav_model = np.random.randint(
+                -1*self.model_var, self.model_var, size=(state_size, state_size))
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
-        # function for estimating parameters
 
         self.attn = np.identity(self.state_size)  # attention matrix
 
@@ -129,7 +136,7 @@ class Agent_with_Sigmoid_Model():
         else:
             # get first vector, if self control used.
             sum_priors = self.past_priors[-1]
-        mem = min(self.behav_control, len(self.past_priors))
+        mem = int(min(self.behav_control, len(self.past_priors)))
         for m in range(2, mem+1):
             i = -1 * m
             sum_priors = [g + h for g,
@@ -175,7 +182,7 @@ class Agent_with_Sigmoid_Model():
         '''
         Get the agent type.
         '''
-        return "model"
+        return "model_sig"
 
 
 def matrix_sigmoid(x):

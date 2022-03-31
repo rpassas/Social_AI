@@ -18,7 +18,7 @@ class Agent_with_Linear_Model():
             If behav_control >=0 then earlier behavioral priors are averaged into the new one,
             behav_control = 0 includes the behavioral prior from trial t, and
             behav_control > 0 includes behavioral priors from trial t - behav_control.
-        model_var [integer, default = 1]: sets the range of values present in the behavior model. When
+        model_var [integer, default = 0]: sets the range of values present in the behavior model. When
             set to 0, the model is set to an identity matrix.
 
 
@@ -31,7 +31,7 @@ class Agent_with_Linear_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, memory=4, behav_control=1, model_var=1, action_cost_fn='linear'):
+    def __init__(self, state_size=3, memory=4, behav_control=1, model_var=0, action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -49,19 +49,18 @@ class Agent_with_Linear_Model():
         assert behav_control >= 0, "memory must be >= -1"
         self.behav_control = behav_control
         # model_var or variance of the model determines the range of values in behav_model
-        assert model_var < 10, "model variance must be at most 10"
-        assert model_var > 0, "model variance must be at least 0"
+        assert model_var <= 10, "model variance must be at most 10"
+        assert model_var >= 0, "model variance must be at least 0"
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         if model_var == 0:
             self.behav_model = np.identity(state_size)
         else:
             self.behav_model = np.random.randint(
-                -1*self.model_var, self.model_var, size=state_size)
+                -1*self.model_var, self.model_var, size=(state_size, state_size))
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
-        # function for estimating parameters
 
         self.attn = np.identity(self.state_size)  # attention matrix
 
@@ -136,7 +135,7 @@ class Agent_with_Linear_Model():
         else:
             # get first vector, if self control used.
             sum_priors = self.past_priors[-1]
-        mem = min(self.behav_control, len(self.past_priors))
+        mem = int(min(self.behav_control, len(self.past_priors)))
         for m in range(2, mem+1):
             i = -1 * m
             sum_priors = [g + h for g,
@@ -182,7 +181,7 @@ class Agent_with_Linear_Model():
         '''
         Get the agent type.
         '''
-        return "model"
+        return "model_lin"
 
 
 def matrix_sigmoid(x):

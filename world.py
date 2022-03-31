@@ -45,8 +45,8 @@ class World():
         self.behav_control = behav_control  # behavioral control of the agents
         for i in model_var:
             assert type(i) == int, 'model_control entries must be integers'
-            assert i < 10, "model variance must be at most 10"
-            assert i > 10, "model variance must be at least 0"
+            assert i <= 10, "model variance must be at most 10"
+            assert i >= 0, "model variance must be at least 0"
         self.model_var = model_var  # behavioral control of the agents
 
         # variables to be filled as the experiment runs
@@ -67,16 +67,20 @@ class World():
             n -= 1
             if self.type[n-1] == "model":
                 self.agents.append(Agent_with_Model(
-                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+                    state_size=self.state_size, memory=float(self.memory[n-1]),
+                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "model_sig":
                 self.agents.append(Agent_with_Sigmoid_Model(
-                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+                    state_size=self.state_size, memory=float(self.memory[n-1]),
+                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "model_lin":
                 self.agents.append(Agent_with_Linear_Model(
-                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+                    state_size=self.state_size, memory=float(self.memory[n-1]),
+                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "model_alt":
                 self.agents.append(Agent_with_Alt_Sigmoid_Model(
-                    self.state_size, float(self.memory[n-1]), float(self.behav_control[n-1])))
+                    state_size=self.state_size, memory=float(self.memory[n-1]),
+                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             # elif self.type[n-1] == "chaos":
             #     self.agents.append(Agent_of_Chaos(
             #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))

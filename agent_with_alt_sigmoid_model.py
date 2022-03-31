@@ -9,6 +9,18 @@ class Agent_with_Alt_Sigmoid_Model():
 
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
+        memory [integer >= 0, default=4]: sets memory weighting of prior predictions.
+            Prediction error always adjusts from a prior prediction,
+            so memory = 0 includes only weighting from the prior trial.
+            memory > 0 weights the prior by earlier predictions, giving equal weight to each.
+        behav_control [integer >= -1, default = 4]: sets weighting of prior behaviors.
+            Received prediciton error will be linearly transformed into a new behavioral prior.
+            If behav_control is set to -1, then the new behavioral prior is used without further weighting.
+            If behav_control >=0 then earlier behavioral priors are averaged into the new one,
+            behav_control = 0 includes the behavioral prior from trial t, and
+            behav_control > 0 includes behavioral priors from trial t - behav_control.
+        model_var [integer, default = 0]: sets the range of values present in the behavior model. When
+            set to 0, the model is set to an identity matrix.
 
 
     VARIABLES:
@@ -20,7 +32,7 @@ class Agent_with_Alt_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, model_var=1, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -35,31 +47,19 @@ class Agent_with_Alt_Sigmoid_Model():
         assert memory > 0, "memory must be > 0"
         self.memory = memory
         self.behav_control = behav_control
-
-        # This is necessary to get people to change their behaviors, or else they'll just remain the same.
-        # It doesn't seem to move behavior very much right now though, so we may need to experiment with values.
-        # self.behav_model = np.random.randint(-1,
-        #                                     1, size=(state_size, state_size))
-        self.behav_model = np.identity(self.state_size)
+        # model_var or variance of the model determines the range of values in behav_model
+        assert model_var <= 10, "model variance must be at most 10"
+        assert model_var >= 0, "model variance must be at least 0"
+        self.model_var = model_var
+        # behavioral model applies some randomness or "personality" to how behavior gets adjusted
+        if model_var == 0:
+            self.behav_model = np.identity(state_size)
+        else:
+            self.behav_model = np.random.randint(
+                -1*self.model_var, self.model_var, size=(state_size, state_size))
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
-        # function for estimating parameters
-
-        # priors adjustment rate
-        if alpha > 1 or alpha < 0:
-            self.alpha = 1
-        elif alpha < 0:
-            self.alpha = 0.01
-        else:
-            self.alpha = alpha
-        # estimates adjustment rate
-        if beta > 1 or beta < 0:
-            self.beta = 1
-        elif beta < 0:
-            self.beta = 0.01
-        else:
-            self.beta = beta
         self.attn = np.identity(self.state_size)  # attention matrix
 
     def make_behavior(self):
@@ -133,14 +133,15 @@ class Agent_with_Alt_Sigmoid_Model():
         else:
             # get first vector, if self control used.
             sum_priors = self.past_priors[-1]
-        mem = min(self.behav_control, len(self.past_priors))
+        mem = int(min(self.behav_control, len(self.past_priors)))
         for m in range(2, mem+1):
             i = -1 * m
             sum_priors = [g + h for g,
                           h in zip(sum_priors, self.past_priors[i])]
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
-        top = sum_priors + matrix_sigmoid(self.behav_model @ attn_weighted_dif)
+        updated_dif = self.behav_model @ attn_weighted_dif
+        top = sum_priors + dynamic_sigmoid(self.past_priors[-1], updated_dif)
         self.b_priors = top / (mem + 1)
 
     def learn_predict_world(self):
@@ -149,7 +150,7 @@ class Agent_with_Alt_Sigmoid_Model():
         Uses alternative weighted average to get vector of errors.
         '''
         sum_pred = self.past_predictions[-1]  # always include last memory from current trial t.
-        mem = min(self.memory, len(self.past_predictions))
+        mem = int(min(self.memory, len(self.past_predictions)))
         for m in range(2, mem+1):
             i = -1 * m
             sum_pred = [g + h for g,
@@ -159,6 +160,7 @@ class Agent_with_Alt_Sigmoid_Model():
         #base = np.asarray(sum_pred) / mem
         #sig = dynamic_sigmoid(base, attn_weighted_dif)
         sig = dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
+        '''
         print("world, pred:")
         print(self.world[-1])
         print(self.past_predictions[-1])
@@ -166,13 +168,16 @@ class Agent_with_Alt_Sigmoid_Model():
         print(dif)
         print("sig:")
         print(sig)
+        '''
         #sig = matrix_sigmoid(attn_weighted_dif)
         top = sum_pred + sig
         p = top / (mem + 1)
+        '''
         print("update:")
         print(self.past_predictions[-1])
         print(p)
         print("---")
+        '''
         self.world_pred = p
 
     def get_cost(self):
@@ -195,19 +200,7 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         Get the agent type.
         '''
-        return "model"
-
-    def get_alpha(self):
-        '''
-        Get the alpha value.
-        '''
-        return self.alpha
-
-    def get_beta(self):
-        '''
-        Get the beta value.
-        '''
-        return self.beta
+        return "model_alt"
 
 
 def matrix_sigmoid(x):
@@ -222,7 +215,8 @@ def dynamic_sigmoid(i, x):
     Helper sigmoid function where the intercept is a value of i (list)
     '''
     y = np.exp(-x)
-    out = np.asarray([1 / (1 + ((1/i[j]) - 1) * y[j]) for j in range(len(i))])
+    out = np.asarray([1 / max(0.001, (1 + ((1/i[j]) - 1) * y[j]))
+                     for j in range(len(i))])
     return out
 
 

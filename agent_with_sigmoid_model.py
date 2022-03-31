@@ -7,7 +7,7 @@ class Agent_with_Sigmoid_Model():
     to output behavior and adjust based on errors. An additional matrix determines attention.
 
     INPUTS:
-        state_size [integer, default=3]: sets size of behavior feature space, N.
+        state_size [integer, default=500]: sets size of behavior feature space, N. Expected behavior occurs when N is large.
         memory [integer >= 0, default=4]: sets memory weighting of prior predictions.
             Prediction error always adjusts from a prior prediction,
             so memory = 0 includes only weighting from the prior trial.
@@ -32,7 +32,7 @@ class Agent_with_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, memory=4, behav_control=4, model_var=0, action_cost_fn='linear'):
+    def __init__(self, state_size=500, memory=4, behav_control=4, model_var=1, action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -47,18 +47,13 @@ class Agent_with_Sigmoid_Model():
         assert memory >= 0, "memory must be >= 0"
         self.memory = int(memory)
         # how much of world is considered for current prediction
-        assert behav_control >= 0, "memory must be >= -1"
+        assert behav_control >= 0, "behav_control must be >= -1"
         self.behav_control = behav_control
         # model_var or variance of the model determines the range of values in behav_model
-        assert model_var <= 10, "model variance must be at most 10"
-        assert model_var >= 0, "model variance must be at least 0"
+        assert model_var >= 0, "model variance must be >= 0"
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        if model_var == 0:
-            self.behav_model = np.identity(state_size)
-        else:
-            self.behav_model = np.random.randint(
-                -1*self.model_var, self.model_var, size=(state_size, state_size))
+        self.behav_model = np.random.rand(state_size, state_size)*self.model_var
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function

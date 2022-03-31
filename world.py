@@ -16,13 +16,13 @@ class World():
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
         time [integer, default=100]: sets number of experimental trials, t.
-        agent [strings]: 
+        agent [strings]:
         seed [integer, default=None]: use an integer seed in order to replicate analyses.
         memory
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
     """
 
-    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"], seed=None, memory=[4, 4], behav_control=[4, 4], model_var=[0, 0], agent_n=2):
+    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"], seed=None, memory=[4, 4], behav_control=[4, 4], model_var=[1, 1], agent_n=2):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -44,9 +44,7 @@ class World():
             assert type(i) == int, 'behav_control entries must be integers'
         self.behav_control = behav_control  # behavioral control of the agents
         for i in model_var:
-            assert type(i) == int, 'model_control entries must be integers'
-            assert i <= 10, "model variance must be at most 10"
-            assert i >= 0, "model variance must be at least 0"
+            assert i >= 0, "model variance must be at least 0" # these do not need to be integers
         self.model_var = model_var  # behavioral control of the agents
 
         # variables to be filled as the experiment runs

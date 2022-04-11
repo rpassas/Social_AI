@@ -40,7 +40,7 @@ class Agent_with_Alt_Sigmoid_Model():
         # TODO - parameterize self.b_learnable
         self.b_learnable = 5 # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors.
         # values near 0 set most behaviors near 0.5. High values (e.g. 10) set clear bimodal distribution. Genrally use values in [0, 10] range.
-        self.b_priors = matrix_sigmoid((2*self.b_priors)-1*self.b_learnable)
+        self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
         self.world_pred = np.random.rand(1, state_size).round(
@@ -57,7 +57,7 @@ class Agent_with_Alt_Sigmoid_Model():
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         self.behav_model = (2*np.random.rand(state_size, state_size)-1)*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
-        self.model_thresh = .9 # TODO - parameterize this.
+        self.model_thresh = .95 # TODO - parameterize this.
         self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10 # TODO - parameterize scaling
         self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1 # TODO - parameterize scaling
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)

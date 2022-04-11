@@ -66,7 +66,7 @@ class Agent_Dummy():
         '''
         self.world.append(world)
 
-    def get_priors(self):
+    def get_behav_priors(self):
         '''
         Gets the behavioral priors of the agent.
         '''
@@ -80,7 +80,7 @@ class Agent_Dummy():
         dif = [np.asarray([abs(g-h)
                            for g, h in zip(self.world[-1], self.world_pred)])][0]
         e = round(np.sum(dif)/len(dif), 3)
-        return e
+        return dif, e
 
     def learn_conform(self):
         # TODO: this is not learning, just a placeholder heuristic
@@ -88,7 +88,7 @@ class Agent_Dummy():
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
-        pred_error = self.behavior_prediction_error()
+        dif, pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
             magnitude = np.random.choice([-1, 1]) * pred_error
@@ -103,7 +103,7 @@ class Agent_Dummy():
         '''
         Adjust prediction of world states based on prediction error.
         '''
-        pred_error = self.behavior_prediction_error()
+        dif, pred_error = self.behavior_prediction_error()
         threshold = self.action_cost(pred_error)
         if pred_error > threshold:
             b = np.random.choice([-1, 1]) * self.beta

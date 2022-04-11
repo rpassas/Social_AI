@@ -44,7 +44,8 @@ class World():
             assert type(i) == int, 'behav_control entries must be integers'
         self.behav_control = behav_control  # behavioral control of the agents
         for i in model_var:
-            assert i >= 0, "model variance must be at least 0" # these do not need to be integers
+            # these do not need to be integers
+            assert i >= 0, "model variance must be at least 0"
         self.model_var = model_var  # behavioral control of the agents
 
         # variables to be filled as the experiment runs
@@ -79,18 +80,18 @@ class World():
                 self.agents.append(Agent_with_Alt_Sigmoid_Model(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
-            # elif self.type[n-1] == "chaos":
-            #     self.agents.append(Agent_of_Chaos(
-            #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))
+            elif self.type[n-1] == "chaos":
+                self.agents.append(Agent_of_Chaos(
+                    state_size=self.state_size, alpha=0.5, beta=0.5))
             # elif self.type[n-1] == "average":
             #     self.agents.append(Agent_Average(
             #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.memory[n-1]))
-            # elif self.type[n-1] == "prediction":
-            #     self.agents.append(Agent_Average_Prediction(
-            #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.memory[n-1]))
-            # elif self.type[n-1] == "dummy":
-            #     self.agents.append(Agent_Dummy(
-            #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))
+            elif self.type[n-1] == "prediction":
+                self.agents.append(Agent_Average_Prediction(
+                    state_size=self.state_size, alpha=0.1, beta=0.5, memory=self.memory[n-1]))
+            elif self.type[n-1] == "dummy":
+                self.agents.append(Agent_Dummy(
+                    state_size=self.state_size, alpha=0.5, beta=0.5))
             # else:
             #     self.agents.append(Agent_Dummy(
             #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))

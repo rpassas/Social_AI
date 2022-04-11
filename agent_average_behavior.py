@@ -74,7 +74,7 @@ class Agent_Average():
         '''
         self.world.append(world)
 
-    def get_priors(self):
+    def get_behav_priors(self):
         '''
         Gets the behavioral priors of the agent.
         '''

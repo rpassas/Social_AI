@@ -38,7 +38,8 @@ class Agent_with_Alt_Sigmoid_Model():
         # generates a new instance of a behavioral prior.
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
         # TODO - parameterize self.b_learnable
-        self.b_learnable = 5 # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors.
+        # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors.
+        self.b_learnable = 5
         # values near 0 set most behaviors near 0.5. High values (e.g. 10) set clear bimodal distribution. Genrally use values in [0, 10] range.
         self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
         self.past_priors = []  # stores past behavioral priors.
@@ -55,11 +56,14 @@ class Agent_with_Alt_Sigmoid_Model():
         assert model_var >= 0, "model variance must be at least 0"
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        self.behav_model = (2*np.random.rand(state_size, state_size)-1)*self.model_var
+        self.behav_model = (2*np.random.rand(state_size,
+                            state_size)-1)*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
-        self.model_thresh = .95 # TODO - parameterize this.
-        self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10 # TODO - parameterize scaling
-        self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1 # TODO - parameterize scaling
+        self.model_thresh = .95  # TODO - parameterize this.
+        self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(
+            self.behav_model) > self.model_thresh]*10  # TODO - parameterize scaling
+        self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(
+            self.behav_model) <= self.model_thresh]*.1  # TODO - parameterize scaling
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
         self.attn = np.identity(self.state_size)  # attention matrix
@@ -97,8 +101,6 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
-        # JT NOTE - this is different from how we original wrote the math, as this is B2 - B^12.
-        # But I think this is right. It means that when an agent makes no predictions, they just take in behavior as input.
         # absolute prediction error across all features
         avg_abs_error = round(np.sum(abs(dif))/len(dif), 3)
         return dif, avg_abs_error
@@ -161,8 +163,9 @@ class Agent_with_Alt_Sigmoid_Model():
                         h in zip(sum_pred, self.past_predictions[i])]
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
+        #top = sum_pred + dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
         top = sum_pred + 2*(matrix_sigmoid(attn_weighted_dif)-0.5)
-        self.world_pred = top / (mem + 1)
+        self.world_pred = top / max(mem, 1)
 
     def get_cost(self):
         '''

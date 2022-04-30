@@ -16,13 +16,15 @@ class World():
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
         time [integer, default=100]: sets number of experimental trials, t.
-        agent [strings]:
+        agent [agents]:
+            list of agents 
         seed [integer, default=None]: use an integer seed in order to replicate analyses.
         memory
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
     """
+    # memory=[4, 4], behav_control=[4, 4], model_var=[1, 1], agent=["model_sig", "model_sig"],
 
-    def __init__(self, state_size=3, time=100, agent=["model_alt", "model_alt"], seed=None, memory=[4, 4], behav_control=[4, 4], model_var=[1, 1], agent_n=2):
+    def __init__(self, state_size=3, time=100, seed=None, agents=[]):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -30,23 +32,6 @@ class World():
         self.state_size = state_size
         assert time > 0, "time must be > 0"  # length of an experiment
         self.time = time
-        assert agent_n >= 2, "agent_n must be >= 2"  # number of agents
-        self.agent_n = agent_n
-        self.type = agent
-        assert len(
-            memory) == self.agent_n, 'memory must be a list, with as many entries as agent_n'
-        for i in memory:
-            assert type(i) == int, 'memory entries must be integers'
-        self.memory = memory  # memory of the agents
-        assert len(
-            behav_control) == self.agent_n, 'behav_control must be a list, with as many entries as agent_n'
-        for i in behav_control:
-            assert type(i) == int, 'behav_control entries must be integers'
-        self.behav_control = behav_control  # behavioral control of the agents
-        for i in model_var:
-            # these do not need to be integers
-            assert i >= 0, "model variance must be at least 0"
-        self.model_var = model_var  # behavioral control of the agents
 
         # variables to be filled as the experiment runs
         self.agents = []
@@ -55,48 +40,6 @@ class World():
         self.predictions = []
         self.errors = []
         self.costs = []
-
-    def create_agents(self):
-        '''
-        Generate the agents.
-        '''
-        # later on we can add more agents
-        n = self.agent_n
-        while n:
-            n -= 1
-            if self.type[n-1] == "model":
-                self.agents.append(Agent_with_Model(
-                    state_size=self.state_size, memory=float(self.memory[n-1]),
-                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
-            elif self.type[n-1] == "model_sig":
-                self.agents.append(Agent_with_Sigmoid_Model(
-                    state_size=self.state_size, memory=float(self.memory[n-1]),
-                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
-            elif self.type[n-1] == "model_lin":
-                self.agents.append(Agent_with_Linear_Model(
-                    state_size=self.state_size, memory=float(self.memory[n-1]),
-                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
-            elif self.type[n-1] == "model_alt":
-                self.agents.append(Agent_with_Alt_Sigmoid_Model(
-                    state_size=self.state_size, memory=float(self.memory[n-1]),
-                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
-            elif self.type[n-1] == "chaos":
-                self.agents.append(Agent_of_Chaos(
-                    state_size=self.state_size, alpha=0.5, beta=0.5))
-            # elif self.type[n-1] == "average":
-            #     self.agents.append(Agent_Average(
-            #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1]), self.memory[n-1]))
-            elif self.type[n-1] == "prediction":
-                self.agents.append(Agent_Average_Prediction(
-                    state_size=self.state_size, alpha=(self.model_var[n-1]*0.1), beta=0.5, memory=self.memory[n-1]))
-            elif self.type[n-1] == "dummy":
-                self.agents.append(Agent_Dummy(
-                    state_size=self.state_size, alpha=0.5, beta=0.5))
-            # else:
-            #     self.agents.append(Agent_Dummy(
-            #         self.state_size, float(self.alphas[n-1]), float(self.betas[n-1])))
-            else:
-                raise Exception("No valid agents could be found")
 
     def run(self):
         '''
@@ -206,30 +149,7 @@ class World():
 
 
 def main():
-    parser = argparse.ArgumentParser(description="A world generator")
-    '''parser.add_argument("-n", "--num_agents", type=int,
-                        metavar="num_agents", help="number of agents in the experiment")
-    '''
-    parser.add_argument("-s", "--state_size", type=int,
-                        metavar="state_size", help="size of behavior vector")
-    parser.add_argument("-t", "--time", type=int,
-                        metavar="time", help="number of time steps")
-    parser.add_argument("-q", "--agent", type=str, nargs='+',
-                        metavar="agent", help="type of agents to be used: chaos, average, dummy, model, prediction")
-    parser.add_argument("-a", "--alpha", type=float, nargs='+',
-                        metavar="alpha", help="prior learning rate: 0.001 - 1")
-    parser.add_argument("-b", "--beta", type=float, nargs='+',
-                        metavar="beta", help="conformity learning rate: 0.001 - 1")
-    parser.add_argument("-r", "--seed", type=int, nargs='+',
-                        metavar="seed", help="random seed for generating priors")
-    parser.add_argument("-m", "--memory", type=int, nargs='+',
-                        metavar="memory", help="how far back can an agent consider other's history")
-
-    args = parser.parse_args()
-
-    world = World(args.state_size, args.time,
-                  args.agent, args.alpha, args.beta, args.seed, args.memory)
-    world.create_agents()
+    world = World()
     world.run()
     world.print_results()
 

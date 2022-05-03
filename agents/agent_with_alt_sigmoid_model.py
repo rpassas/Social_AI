@@ -32,7 +32,7 @@ class Agent_with_Alt_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, model_var=1, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=4, behav_control=4, model_var=1, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -99,6 +99,8 @@ class Agent_with_Alt_Sigmoid_Model():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
+        if len(self.world[-1]) != len(self.world_pred[-1]):
+            raise ValueError("state sizes between agents must match")
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
         # absolute prediction error across all features

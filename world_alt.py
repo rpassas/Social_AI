@@ -1,38 +1,20 @@
-from agent_of_chaos import Agent_of_Chaos
-from agent_average_behavior import Agent_Average
-from agent_average_prediction import Agent_Average_Prediction
-from agent_dummy import Agent_Dummy
-from agent_with_model import Agent_with_Model
-from agent_with_sigmoid_model import Agent_with_Sigmoid_Model
-from agent_with_linear_model import Agent_with_Linear_Model
-from agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
 import numpy as np
-import argparse
 
 
 class World():
     """
     World holds state data.
     INPUTS:
-        state_size [integer, default=3]: sets size of behavior feature space, N.
         time [integer, default=100]: sets number of experimental trials, t.
-        agent [agents]:
-            list of agents 
-        seed [integer, default=None]: use an integer seed in order to replicate analyses.
-        memory
-        agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
+        agent [agents]: list of agents 
+        seed [integer, default=None]: use an integer seed in order to replicate experiments.
     """
-    # memory=[4, 4], behav_control=[4, 4], model_var=[1, 1], agent=["model_sig", "model_sig"],
 
-    def __init__(self, state_size=3, time=100, seed=None, agents=[]):
+    def __init__(self, time=100, seed=None, agents=[]):
         if seed:
             np.random.seed(seed)
-        # argparse will make unfilled optional args 'None', so perform checks
-        assert state_size > 0, "state_size must be > 0"  # behavior size
-        self.state_size = state_size
         assert time > 0, "time must be > 0"  # length of an experiment
         self.time = time
-
         # variables to be filled as the experiment runs
         self.agents = []
         self.b_priors = []
@@ -130,8 +112,6 @@ class World():
         '''
         for a in self.agents:
             print("agent type:   {}".format(a.get_type()))
-            #print("agent alpha:   {}".format(a.get_alpha()))
-            #print("agent beta:   {}".format(a.get_beta()))
             print("  ---  ")
 
         print("\n")

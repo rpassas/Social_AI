@@ -31,7 +31,7 @@ class Agent_with_Alt_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, model_var=1, learnable=5, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=0, behav_control=0, model_var=1, learnable=1, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.

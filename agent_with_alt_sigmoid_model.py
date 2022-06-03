@@ -19,7 +19,9 @@ class Agent_with_Alt_Sigmoid_Model():
             behav_control = 1 includes the behavioral prior from trial t.
             behav_control > 1 includes additional behavioral priors.
         model_var [integer, default = 0]: sets the range of values present in the behavior model. When
-            set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting..
+            set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting.
+        learnable [integer, default = 1]: multiplier applied within sigmoid to initial behavioral_priors.
+            High values create a bimodial distribution. Zero gives 0.5 for all initial behavioral_priors.
 
 
     VARIABLES:
@@ -37,6 +39,7 @@ class Agent_with_Alt_Sigmoid_Model():
         # generates a new instance of a behavioral prior.
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
         self.b_learnable = learnable # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors. # Allow this to be specified in World.
+        assert learnable >= 0, "learnable must be >= 0"
         # values near 0 set most behaviors near 0.5. High values (e.g. 10) set clear bimodal distribution. Genrally use values in [0, 10] range.
         self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
         self.past_priors = []  # stores past behavioral priors.
@@ -55,9 +58,11 @@ class Agent_with_Alt_Sigmoid_Model():
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         self.behav_model = (2*np.random.rand(state_size, state_size)-1)*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
-        self.model_thresh = .95
-        self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10
-        self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1
+        # TODO - parameterize this. It's a neat idea, but I don't know how it works yet.
+        # self.model_thresh = .95
+        # self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10
+        # self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1
+
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
         self.attn = np.identity(self.state_size)  # attention matrix
@@ -96,36 +101,8 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
-        # JT NOTE - this is different from how we original wrote the math, as this is B2 - B^12.
-        # But I think this is right. It means that when an agent makes no predictions, they just take in behavior as input.
-        # absolute prediction error across all features
         avg_abs_error = round(np.sum(abs(dif))/len(dif), 3)
         return dif, avg_abs_error
-
-    # def behav_update(self, pred_err, attn_matrix, behav_control, internal_model):
-    #     '''
-    #     Adjust behavioral priors to match the world state based on conformity error
-    #     pred_err = prediction error at time t
-    #     attn_matrix = attention matrix at time t
-    #     behav_control = SET PARAMETER, weighting M previous trials into output behavior.
-    #     internal model = linear transfer function from input information to output behavioral prior.
-    #     '''
-    #     sum_priors = self.past_priors[-1]
-    #     # handle case where not yet enough trials.
-    #     if len(self.past_priors) < behav_control:
-    #         behav_control = len(self.past_priors)
-    #     # START HERE - we're solving hte problem of how to take the average over vectors in np.
-    #     for m in range(2, mem):
-    #         i = -1 * m
-    #         sum_priors = [g + h for g,
-    #                       h in zip(sum_priors, self.past_priors[i])]
-    #     dif, avg_abs_error = self.behavior_prediction_error()
-    #     # print(dif)
-    #     # print(self.attn)
-    #     attn_weighted_dif = self.attn @ dif
-    #     # print(attn_weighted_dif)
-    #     top = sum_priors + matrix_sigmoid(self.behav_model @ attn_weighted_dif) # multiply by internal model to get new behavior.
-    #     self.b_priors = top / (mem + 1)
 
     def learn_conform(self):
         '''

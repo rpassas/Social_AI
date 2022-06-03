@@ -136,11 +136,9 @@ class World():
                 dif, avg_abs_error = self.agents[i].behavior_prediction_error()
                 self.agents[i].learn_conform()
                 self.agents[i].learn_predict_world()
-                # c = self.agents[i].get_cost()
-                c = avg_abs_error
                 prediction.append(p)
                 error.append(dif)
-                cost.append(c)
+                cost.append(avg_abs_error)
             self.predictions.append(prediction)
             self.errors.append(error)
             self.costs.append(cost)

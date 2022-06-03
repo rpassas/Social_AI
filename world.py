@@ -22,7 +22,9 @@ class World():
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
     """
 
-    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"], seed=None, memory=[4, 4], behav_control=[4, 4], model_var=[1, 1], agent_n=2):
+    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"],
+        seed=None, memory=[4, 4], behav_control=[4, 4], model_var=[1, 1],
+        learnable=[5, 5], agent_n=2):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -45,8 +47,9 @@ class World():
         self.behav_control = behav_control  # behavioral control of the agents
         for i in model_var:
             # these do not need to be integers
-            assert i >= 0, "model variance must be at least 0"
+            assert i >= 0, "model variance must be >= 0"
         self.model_var = model_var  # behavioral control of the agents
+        self.learnable = learnable  # adjust bimodal distribution of b_priors
 
         # variables to be filled as the experiment runs
         self.agents = []
@@ -79,7 +82,8 @@ class World():
             elif self.type[n-1] == "model_alt":
                 self.agents.append(Agent_with_Alt_Sigmoid_Model(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
-                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
+                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1],
+                    learnable=float(self.learnable[n-1])))
             elif self.type[n-1] == "chaos":
                 self.agents.append(Agent_of_Chaos(
                     state_size=self.state_size, alpha=0.5, beta=0.5))

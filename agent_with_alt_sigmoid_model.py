@@ -10,17 +10,16 @@ class Agent_with_Alt_Sigmoid_Model():
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
         memory [integer >= 0, default=4]: sets memory weighting of prior predictions.
-            Prediction error always adjusts from a prior prediction,
-            so memory = 0 includes only weighting from the prior trial.
+            Memory = 0 uses no weighting.
             memory > 0 weights the prior by earlier predictions, giving equal weight to each.
-        behav_control [integer >= -1, default = 4]: sets weighting of prior behaviors.
+                At memory == 1, the current trial t is averaged with the new prediction.
+        behav_control [integer >= 0, default = 4]: sets weighting of prior behaviors.
             Received prediciton error will be linearly transformed into a new behavioral prior.
-            If behav_control is set to -1, then the new behavioral prior is used without further weighting.
-            If behav_control >=0 then earlier behavioral priors are averaged into the new one,
-            behav_control = 0 includes the behavioral prior from trial t, and
-            behav_control > 0 includes behavioral priors from trial t - behav_control.
+            If behav_control is set to 0, then the new behavioral prior is used without further weighting.
+            behav_control = 1 includes the behavioral prior from trial t.
+            behav_control > 1 includes additional behavioral priors.
         model_var [integer, default = 0]: sets the range of values present in the behavior model. When
-            set to 0, the model is set to an identity matrix.
+            set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting..
 
 
     VARIABLES:
@@ -32,13 +31,12 @@ class Agent_with_Alt_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, model_var=1, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=1, beta=1, seed=None, memory=4, behav_control=4, model_var=1, learnable=5, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
         self.b_priors = np.random.rand(1, state_size).round(3)[0]
-        # TODO - parameterize self.b_learnable
-        self.b_learnable = 5 # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors.
+        self.b_learnable = learnable # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors. # Allow this to be specified in World.
         # values near 0 set most behaviors near 0.5. High values (e.g. 10) set clear bimodal distribution. Genrally use values in [0, 10] range.
         self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
         self.past_priors = []  # stores past behavioral priors.
@@ -48,7 +46,7 @@ class Agent_with_Alt_Sigmoid_Model():
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
         # how much of world is considered for current prediction
-        assert memory > 0, "memory must be > 0"
+        assert memory >= 0, "memory must be >= 0"
         self.memory = memory
         self.behav_control = behav_control
         # model_var or variance of the model determines the range of values in behav_model
@@ -57,9 +55,9 @@ class Agent_with_Alt_Sigmoid_Model():
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         self.behav_model = (2*np.random.rand(state_size, state_size)-1)*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
-        self.model_thresh = .95 # TODO - parameterize this.
-        self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10 # TODO - parameterize scaling
-        self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1 # TODO - parameterize scaling
+        self.model_thresh = .95
+        self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10
+        self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
         self.attn = np.identity(self.state_size)  # attention matrix
@@ -69,6 +67,7 @@ class Agent_with_Alt_Sigmoid_Model():
         Generate actual behavior (list of 0/1) from priors
         '''
         self.past_priors.append(self.b_priors)
+        # print(np.round(self.b_priors, 5))
         return np.random.binomial(1, self.b_priors)
 
     def make_prediction(self):
@@ -132,16 +131,17 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
-        if self.behav_control < 0:
+        mem = int(min(self.behav_control, len(self.past_priors)))
+        if mem == 0:
             sum_priors = 0
         else:
-            # get first vector, if self control used.
-            sum_priors = self.past_priors[-1]
-        mem = int(min(self.behav_control, len(self.past_priors)))
-        for m in range(2, mem+1):
-            i = -1 * m
-            sum_priors = [g + h for g,
-                          h in zip(sum_priors, self.past_priors[i])]
+            for m in range(1, mem+1):
+                if m == 1:
+                    sum_priors = self.past_priors[-1]
+                else:
+                    i = -1 * m
+                    sum_priors = [g + h for g,
+                                  h in zip(sum_priors, self.past_priors[i])]
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
         updated_dif = self.behav_model @ attn_weighted_dif
@@ -153,16 +153,22 @@ class Agent_with_Alt_Sigmoid_Model():
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
-        sum_pred = self.past_predictions[-1]  # always include last memory from current trial t.
         mem = int(min(self.memory, len(self.past_predictions)))
-        for m in range(2, mem+1):
-            i = -1 * m
-            sum_pred = [g + h for g,
-                        h in zip(sum_pred, self.past_predictions[i])]
+        if mem == 0:
+            sum_pred = 0
+        else:
+            for m in range(1, mem+1):
+                if m == 1:
+                    sum_pred = self.past_predictions[-1] # grab first prior prediction to start the array.
+                else:
+                    i = -1 * m
+                    sum_pred = [g + h for g,
+                                h in zip(sum_pred, self.past_predictions[i])]
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
-        top = sum_pred + 2*(matrix_sigmoid(attn_weighted_dif)-0.5)
-        self.world_pred = top / (mem + 1)
+        top = sum_pred + dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
+        # print(top)
+        self.world_pred = top / (mem+1)
 
     def get_cost(self):
         '''
@@ -198,9 +204,9 @@ def dynamic_sigmoid(i, x):
     '''
     Helper sigmoid function where the intercept is a value of i (list)
     '''
-    y = np.exp(-x)
-    out = np.asarray([1 / max(0.001, (1 + ((1/i[j]) - 1) * y[j]))
-                     for j in range(len(i))])
+    y = np.exp(np.clip(-x, -100, 100)) # avoid runover into infinity.
+    out = np.asarray([1 / (1 + ((1 - np.clip(i[j], .0001, 1))/np.clip(i[j], .0001, 1)) * y[j])
+            for j in range(len(i))])
     return out
 
 

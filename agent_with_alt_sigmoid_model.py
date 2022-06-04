@@ -182,7 +182,7 @@ def dynamic_sigmoid(i, x):
     Helper sigmoid function where the intercept is a value of i (list)
     '''
     y = np.exp(np.clip(-x, -100, 100)) # avoid runover into infinity.
-    out = np.asarray([1 / (1 + ((1 - np.clip(i[j], .0001, 1))/np.clip(i[j], .0001, 1)) * y[j])
+    out = np.asarray([1 / (1 + ((1 - np.clip(i[j], 1e-50, 1))/np.clip(i[j], 1e-50, 1)) * y[j])
             for j in range(len(i))])
     return out
 

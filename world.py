@@ -19,12 +19,14 @@ class World():
         agent [strings]:
         seed [integer, default=None]: use an integer seed in order to replicate analyses.
         memory
+        change_points = [lists of integers, default = None]: reinitialize behavior at time = change_point.
+
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
     """
 
     def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"],
         seed=None, memory=[4, 4], behav_control=[4, 4], model_var=[1, 1],
-        learnable=[5, 5], agent_n=2):
+        learnable=[5, 5], change_points = [[None], [None]], agent_n=2):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -48,6 +50,9 @@ class World():
         for i in model_var:
             # these do not need to be integers
             assert i >= 0, "model variance must be >= 0"
+        for i in change_points:
+            assert isinstance(i, list), 'each entry in change_points must be a list of intergers'
+        self.change_points = change_points
         self.model_var = model_var  # behavioral control of the agents
         self.learnable = learnable  # adjust bimodal distribution of b_priors
 
@@ -111,7 +116,10 @@ class World():
             # generate behaviors
             prior = []
             behavior = []
+            current_time = self.time - time_left
             for i in range(len(self.agents)):
+                if current_time in self.change_points[i]:
+                    self.agents[i].new_behavior()
                 b = self.agents[i].make_behavior()
                 p = self.agents[i].get_behav_priors()
                 behavior.append(b)

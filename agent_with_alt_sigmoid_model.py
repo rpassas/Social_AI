@@ -37,14 +37,14 @@ class Agent_with_Alt_Sigmoid_Model():
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
-        self.b_priors = np.random.rand(1, state_size).round(3)[0]
+        self.b_priors = np.random.rand(1, self.state_size).round(3)[0]
         self.b_learnable = learnable # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors. # Allow this to be specified in World.
         assert learnable >= 0, "learnable must be >= 0"
         # values near 0 set most behaviors near 0.5. High values (e.g. 10) set clear bimodal distribution. Genrally use values in [0, 10] range.
         self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
-        self.world_pred = np.random.rand(1, state_size).round(
+        self.world_pred = np.random.rand(1, self.state_size).round(
             3)[0]  # estimate of world state parameters
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
@@ -56,7 +56,7 @@ class Agent_with_Alt_Sigmoid_Model():
         assert model_var >= 0, "model variance must be at least 0"
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        self.behav_model = (2*np.random.rand(state_size, state_size)-1)*self.model_var
+        self.behav_model = (2*np.random.rand(self.state_size, self.state_size)-1)*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
         # TODO - parameterize this. It's a neat idea, but I don't know how it works yet.
         # self.model_thresh = .95
@@ -66,6 +66,13 @@ class Agent_with_Alt_Sigmoid_Model():
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
         self.attn = np.identity(self.state_size)  # attention matrix
+
+    def new_behavior(self):
+        '''
+        Create new random behavior, initialized as the first behavioral prior was.
+        '''
+        self.b_priors = np.random.rand(1, self.state_size).round(3)[0]
+        self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
 
     def make_behavior(self):
         '''

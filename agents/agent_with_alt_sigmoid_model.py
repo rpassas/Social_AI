@@ -106,6 +106,8 @@ class Agent_with_Alt_Sigmoid_Model():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
+        if len(self.world[-1]) != len(self.world_pred):
+            raise ValueError("state sizes between agents must match")
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
         avg_abs_error = round(np.sum(abs(dif))/len(dif), 3)

@@ -1,11 +1,11 @@
-from agents.agent_of_chaos import Agent_of_Chaos
-from old_versions.agent_average_behavior import Agent_Average
-from agents.agent_average_prediction import Agent_Average_Prediction
-from agents.agent_dummy import Agent_Dummy
-from old_versions.agent_with_model import Agent_with_Model
-from agents.agent_with_sigmoid_model import Agent_with_Sigmoid_Model
-from old_versions.agent_with_linear_model import Agent_with_Linear_Model
-from agents.agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
+from agent_of_chaos import Agent_of_Chaos
+from agent_average_behavior import Agent_Average
+from agent_average_prediction import Agent_Average_Prediction
+from agent_dummy import Agent_Dummy
+from agent_with_model import Agent_with_Model
+from agent_with_sigmoid_model import Agent_with_Sigmoid_Model
+from agent_with_linear_model import Agent_with_Linear_Model
+from agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
 import numpy as np
 import argparse
 

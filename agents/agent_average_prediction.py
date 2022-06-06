@@ -10,7 +10,7 @@ class Agent_Average_Prediction():
     # TODO: implement inference and cost functions in separate classes
     # inference or parameter estimation should be biased towards most recent states and take error for each state into account
 
-    def __init__(self, state_size=3, alpha=1, beta=1, seed='', memory=4, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, alpha=0.5, beta=0.5, seed='', memory=4, inference_fn='IRL',  action_cost_fn='linear'):
         # size of a state
         if state_size < 0:
             self.state_size = 3
@@ -72,9 +72,9 @@ class Agent_Average_Prediction():
         Generate actual world prediction (list of 0/1) from priors
         '''
         # return np.random.binomial(1, self.world_pred)
-        p = np.random.binomial(1, self.world_pred)
-        self.past_predictions.append(p)
-        return p
+        #p = np.random.binomial(1, self.world_pred)
+        self.past_predictions.append(self.world_pred)
+        return self.world_pred
 
     def get_world(self, world):
         '''
@@ -92,14 +92,12 @@ class Agent_Average_Prediction():
         '''
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         '''
-        #dif = [abs(g-h) for g, h in zip(self.world[-1], self.make_prediction())]
         dif = [np.asarray([abs(g-h)
                            for g, h in zip(self.world[-1], self.world_pred)])][0]
         e = round(np.sum(dif)/len(dif), 3)
         return dif, e
 
     def learn_conform(self):
-        # TODO: this is not learning, just a placeholder heuristic
         # the arbitrary cut off via the action_cost maybe graded rather than all or nothing and still needs to be implemented
         '''
         Adjust behavioral priors to match the world state based on conformity error
@@ -120,8 +118,21 @@ class Agent_Average_Prediction():
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
-        weighted_history = [0]*self.state_size
-        count = 0
+        history = [0]*self.state_size
+        memory = min(len(self.past_predictions), self.memory)
+        print(memory)
+        for m in range(1, memory+1):
+            for p in range(len(self.past_predictions[-m])):
+                history[p] = history[p] + (self.past_predictions[-m][p])
+        history = [(b+h) for h, b in zip(history, self.world[-1])]
+        print(history)
+        self.world_pred = [i/(memory+1) for i in history]
+        if len(self.past_predictions) < self.memory:
+            self.past_predictions[0] = self.world_pred
+        print(self.world_pred)
+        print(self.world[-1])
+        '''
+        count = 1
         for i in range(len(self.world)-1, -1, -1):
             # look back four instances
             if count >= self.memory:
@@ -132,17 +143,19 @@ class Agent_Average_Prediction():
             # weighted sum
             for j in range(len(self.past_predictions[i])):
                 weighted_history[j] = weighted_history[j] + \
-                    (w * self.world[i][j])
+                    (w * self.past_predictions[i][j])
             count += 1
         # divide by sum of weights
         #weighted_history = [i/10 for i in weighted_history]
         weighted_history = [i/count for i in weighted_history]
         # get error vector
+        dif, pred_error = self.behavior_prediction_error()
         error = [(p-h)*self.beta for p,
                  h in zip(self.world_pred, weighted_history)]
         # adjust prediction
         new_pred = [(p-e).round(3) for p, e in zip(self.world_pred, error)]
         self.world_pred = new_pred
+        '''
 
     def get_cost(self):
         '''

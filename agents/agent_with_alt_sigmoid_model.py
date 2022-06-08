@@ -37,15 +37,14 @@ class Agent_with_Alt_Sigmoid_Model():
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
-        self.b_priors = np.random.rand(1, self.state_size).round(3)[0]
+        self.b_priors = np.random.normal(0, 1, self.state_size).round(3)
         self.b_learnable = learnable # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors. # Allow this to be specified in World.
         assert learnable >= 0, "learnable must be >= 0"
         # values near 0 set most behaviors near 0.5. High values (e.g. 10) set clear bimodal distribution. Genrally use values in [0, 10] range.
-        self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
+        self.b_priors = matrix_sigmoid((self.b_priors)*self.b_learnable)
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
-        self.world_pred = np.random.rand(1, self.state_size).round(
-            3)[0]  # estimate of world state parameters
+        self.world_pred = np.random.rand(self.state_size).round(3)  # estimate of world state parameters
         self.past_predictions = []  # past predictions
         self.world = []  # history of world states
         # how much of world is considered for current prediction

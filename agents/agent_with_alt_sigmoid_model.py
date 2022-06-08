@@ -1,5 +1,5 @@
 import numpy as np
-
+from sklearn.preprocessing import normalize
 
 class Agent_with_Alt_Sigmoid_Model():
     """
@@ -52,7 +52,7 @@ class Agent_with_Alt_Sigmoid_Model():
         self.behav_control = behav_control
         assert model_var >= 0, "model variance must be at least 0"
         self.model_var = model_var # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        self.behav_model = (2*np.random.rand(self.state_size, self.state_size)-1)*self.model_var
+        self.behav_model = normalize(2*np.random.rand(state_size, state_size)-1, axis=1, norm = 'l2')*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
         # TODO - parameterize this. It's a neat idea, but I don't know how it works yet.
         # self.model_thresh = .95

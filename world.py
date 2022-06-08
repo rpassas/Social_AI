@@ -98,7 +98,7 @@ class World():
                 self.agents.append(Agent_with_Alt_Sigmoid_Model(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1],
-                    behav_initial_spread=float(self.pred_initial_spread[n-1]),
+                    behav_initial_spread=float(self.behav_initial_spread[n-1]),
                     pred_initial_spread=float(self.pred_initial_spread[n-1])))
             elif self.type[n-1] == "chaos":
                 self.agents.append(Agent_of_Chaos(

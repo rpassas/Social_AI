@@ -16,17 +16,26 @@ class World():
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
         time [integer, default=100]: sets number of experimental trials, t.
-        agent [strings]:
+        agent [strings, default = "model_alt"]: selects agent to use. Each has different properties. See agents documentation.
         seed [integer, default=None]: use an integer seed in order to replicate analyses.
-        memory
+        memory [integer >= 0, default=0]: new prediction is an average of N prior predictions +
+            the updated prediction from the current trial..
+        behav_control [integer >= 0, default = 0]: new behavior is an average of N prior behaviors +
+            the new behavior resulting from prediction error on the current trial..
+        model_var [integer, default = 1]: sets the range of values present in the behavior model. When
+            set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting.
+        behav_initial_spread [integer, default = 1]: multiplier applied within sigmoid to initial behavioral_priors.
+            High values create a bimodial distribution. Zero gives 0.5 for all initial behavioral_priors.
+        pred_initial_spread [integer, default = 1]: multiplier applied within sigmoid to initial predictions.
+                High values create a bimodial distribution. Zero gives 0.5 for all initial predictions.
         change_points = [lists of integers, default = None]: reinitialize behavior at time = change_point.
 
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
     """
 
-    def __init__(self, state_size=3, time=100, agent=["model_sig", "model_sig"],
-        seed=None, memory=[4, 4], behav_control=[4, 4], model_var=[1, 1],
-        learnable=[5, 5], change_points = [[None], [None]], agent_n=2):
+    def __init__(self, state_size=3, time=100, agent=["model_alt", "model_alt"],
+        seed=None, memory=[0, 0], behav_control=[0, 0], model_var=[1, 1],
+        behav_initial_spread=[1, 1], pred_initial_spread=[1, 1], change_points = [[None], [None]], agent_n=2):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -54,7 +63,8 @@ class World():
             assert isinstance(i, list), 'each entry in change_points must be a list of intergers'
         self.change_points = change_points
         self.model_var = model_var  # behavioral control of the agents
-        self.learnable = learnable  # adjust bimodal distribution of b_priors
+        self.behav_initial_spread = behav_initial_spread  # adjust bimodal distribution of b_priors
+        self.pred_initial_spread = pred_initial_spread  # adjust bimodal distribution of predictions
 
         # variables to be filled as the experiment runs
         self.agents = []
@@ -88,7 +98,8 @@ class World():
                 self.agents.append(Agent_with_Alt_Sigmoid_Model(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1],
-                    learnable=float(self.learnable[n-1])))
+                    behav_initial_spread=float(self.pred_initial_spread[n-1]),
+                    pred_initial_spread=float(self.pred_initial_spread[n-1])))
             elif self.type[n-1] == "chaos":
                 self.agents.append(Agent_of_Chaos(
                     state_size=self.state_size, alpha=0.5, beta=0.5))

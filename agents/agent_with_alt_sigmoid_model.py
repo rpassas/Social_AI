@@ -9,20 +9,16 @@ class Agent_with_Alt_Sigmoid_Model():
 
     INPUTS:
         state_size [integer, default=3]: sets size of behavior feature space, N.
-        memory [integer >= 0, default=4]: sets memory weighting of prior predictions.
-            Memory = 0 uses no weighting.
-            memory > 0 weights the prior by earlier predictions, giving equal weight to each.
-                At memory == 1, the current trial t is averaged with the new prediction.
-        behav_control [integer >= 0, default = 4]: sets weighting of prior behaviors.
-            Received prediciton error will be linearly transformed into a new behavioral prior.
-            If behav_control is set to 0, then the new behavioral prior is used without further weighting.
-            behav_control = 1 includes the behavioral prior from trial t.
-            behav_control > 1 includes additional behavioral priors.
-        model_var [integer, default = 0]: sets the range of values present in the behavior model. When
+        memory [integer >= 0, default=0]: new prediction is an average of N prior predictions +
+            the updated prediction from the current trial..
+        behav_control [integer >= 0, default = 0]: new behavior is an average of N prior behaviors +
+            the new behavior resulting from prediction error on the current trial..
+        model_var [integer, default = 1]: sets the range of values present in the behavior model. When
             set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting.
-        learnable [integer, default = 1]: multiplier applied within sigmoid to initial behavioral_priors.
+        behav_initial_spread [integer, default = 1]: multiplier applied within sigmoid to initial behavioral_priors.
             High values create a bimodial distribution. Zero gives 0.5 for all initial behavioral_priors.
-
+        pred_initial_spread [integer, default = 1]: multiplier applied within sigmoid to initial predictions.
+                High values create a bimodial distribution. Zero gives 0.5 for all initial predictions.
 
     VARIABLES:
         b_priors: N length vector, giving probability (to 3 decimal places) of
@@ -33,28 +29,29 @@ class Agent_with_Alt_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, seed=None, memory=0, behav_control=0, model_var=1, learnable=1, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=0, behav_control=0, model_var=1, behav_initial_spread=1, pred_initial_spread=1, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
         self.b_priors = np.random.normal(0, 1, self.state_size).round(3)
-        self.b_learnable = learnable # self.b_learnable (>=0) adjusts bimodal distribution of initial behavioral priors. # Allow this to be specified in World.
-        assert learnable >= 0, "learnable must be >= 0"
-        # values near 0 set most behaviors near 0.5. High values (e.g. 10) set clear bimodal distribution. Genrally use values in [0, 10] range.
-        self.b_priors = matrix_sigmoid((self.b_priors)*self.b_learnable)
+        self.behav_initial_spread = behav_initial_spread # self.behav_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
+        assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
+        self.b_priors = matrix_sigmoid((self.b_priors)*self.behav_initial_spread)
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
-        self.world_pred = np.random.rand(self.state_size).round(3)  # estimate of world state parameters
+
+        self.world_pred = np.random.normal(0, 1, self.state_size).round(3)  # estimate of world state parameters
+        self.pred_initial_spread = pred_initial_spread # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
+        assert pred_initial_spread >= 0, "pred_initial_spread must be >= 0"
+        self.world_pred = matrix_sigmoid((self.world_pred)*self.pred_initial_spread)
         self.past_predictions = []  # past predictions
+
         self.world = []  # history of world states
-        # how much of world is considered for current prediction
         assert memory >= 0, "memory must be >= 0"
         self.memory = memory
         self.behav_control = behav_control
-        # model_var or variance of the model determines the range of values in behav_model
         assert model_var >= 0, "model variance must be at least 0"
-        self.model_var = model_var
-        # behavioral model applies some randomness or "personality" to how behavior gets adjusted
+        self.model_var = model_var # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         self.behav_model = (2*np.random.rand(self.state_size, self.state_size)-1)*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
         # TODO - parameterize this. It's a neat idea, but I don't know how it works yet.
@@ -70,8 +67,8 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         Create new random behavior, initialized as the first behavioral prior was.
         '''
-        self.b_priors = np.random.rand(1, self.state_size).round(3)[0]
-        self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.b_learnable)
+        self.b_priors = np.random.normal(0, 1, self.state_size).round(3)
+        self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.behav_initial_spread)
 
     def make_behavior(self):
         '''

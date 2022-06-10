@@ -13,11 +13,11 @@ class Agent_with_Alt_Sigmoid_Model():
             the updated prediction from the current trial..
         behav_control [integer >= 0, default = 0]: new behavior is an average of N prior behaviors +
             the new behavior resulting from prediction error on the current trial..
-        model_var [integer, default = 1]: sets the range of values present in the behavior model. When
-            set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting.
-        behav_initial_spread [integer, default = 1]: multiplier applied within sigmoid to initial behavioral_priors.
+        model_var [number, default = 1.]: sets the slope at intercept of the behavior change sigmoid function.
+            When set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting.
+        behav_initial_spread [number, default = 1.]: multiplier applied within sigmoid to initial behavioral_priors.
             High values create a bimodial distribution. Zero gives 0.5 for all initial behavioral_priors.
-        pred_initial_spread [integer, default = 1]: multiplier applied within sigmoid to initial predictions.
+        pred_initial_spread [number, default = 1.]: multiplier applied within sigmoid to initial predictions.
                 High values create a bimodial distribution. Zero gives 0.5 for all initial predictions.
 
     VARIABLES:
@@ -29,18 +29,18 @@ class Agent_with_Alt_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, seed=None, memory=0, behav_control=0, model_var=1, behav_initial_spread=1, pred_initial_spread=1, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=0, behav_control=0, model_var=1., behav_initial_spread=1., pred_initial_spread=1., inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
-        self.b_priors = np.random.normal(0, 1, self.state_size).round(3)
+        self.b_priors = np.random.normal(0, 1, self.state_size)
         self.behav_initial_spread = behav_initial_spread # self.behav_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
         assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
         self.b_priors = matrix_sigmoid((self.b_priors)*self.behav_initial_spread)
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
 
-        self.world_pred = np.random.normal(0, 1, self.state_size).round(3)  # estimate of world state parameters
+        self.world_pred = np.random.normal(0, 1, self.state_size)  # estimate of world state parameters
         self.pred_initial_spread = pred_initial_spread # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
         assert pred_initial_spread >= 0, "pred_initial_spread must be >= 0"
         self.world_pred = matrix_sigmoid((self.world_pred)*self.pred_initial_spread)
@@ -67,7 +67,7 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         Create new random behavior, initialized as the first behavioral prior was.
         '''
-        self.b_priors = np.random.normal(0, 1, self.state_size).round(3)
+        self.b_priors = np.random.normal(0, 1, self.state_size)
         self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.behav_initial_spread)
 
     def make_behavior(self):
@@ -75,7 +75,6 @@ class Agent_with_Alt_Sigmoid_Model():
         Generate actual behavior (list of 0/1) from priors
         '''
         self.past_priors.append(self.b_priors)
-        # print(np.round(self.b_priors, 5))
         return np.random.binomial(1, self.b_priors)
 
     def make_prediction(self):
@@ -106,7 +105,7 @@ class Agent_with_Alt_Sigmoid_Model():
             raise ValueError("state sizes between agents must match")
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
-        avg_abs_error = round(np.sum(abs(dif))/len(dif), 3)
+        avg_abs_error = np.sum(abs(dif))/len(dif)
         return dif, avg_abs_error
 
     def learn_conform(self):
@@ -187,8 +186,8 @@ def dynamic_sigmoid(i, x):
     Helper sigmoid function where the intercept is a value of i (list)
     '''
     y = np.exp(np.clip(-x, -100, 100)) # avoid runover into infinity.
-    out = np.asarray([1 / (1 + ((1 - np.clip(i[j], 1e-50, 1))/np.clip(i[j], 1e-50, 1)) * y[j])
-            for j in range(len(i))])
+    out = np.asarray([1 / (1 + ((1 - np.clip(i[j], 1e-50, 1-1e-50))/np.clip(i[j], 1e-50, 1-1e-50)) * y[j])
+            for j in range(len(i))]) # changed clips to keep sigmoid function from getting stuck at 0 or 1
     return out
 
 

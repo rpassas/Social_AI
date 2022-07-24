@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.preprocessing import normalize
 
+
 class Agent_with_Alt_Sigmoid_Model():
     """
     This agent has an internal model, consisting of a covariance matrix from which it can draw from
@@ -34,16 +35,21 @@ class Agent_with_Alt_Sigmoid_Model():
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
         self.b_priors = np.random.normal(0, 1, self.state_size)
-        self.behav_initial_spread = behav_initial_spread # self.behav_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
+        # self.behav_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
+        self.behav_initial_spread = behav_initial_spread
         assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
-        self.b_priors = matrix_sigmoid((self.b_priors)*self.behav_initial_spread)
+        self.b_priors = matrix_sigmoid(
+            (self.b_priors)*self.behav_initial_spread)
         self.past_priors = []  # stores past behavioral priors.
         self.behavior = []  # current behavior. I THINK THIS GOES UNUSED?
 
-        self.world_pred = np.random.normal(0, 1, self.state_size)  # estimate of world state parameters
-        self.pred_initial_spread = pred_initial_spread # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
+        # estimate of world state parameters
+        self.world_pred = np.random.normal(0, 1, self.state_size)
+        # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
+        self.pred_initial_spread = pred_initial_spread
         assert pred_initial_spread >= 0, "pred_initial_spread must be >= 0"
-        self.world_pred = matrix_sigmoid((self.world_pred)*self.pred_initial_spread)
+        self.world_pred = matrix_sigmoid(
+            (self.world_pred)*self.pred_initial_spread)
         self.past_predictions = []  # past predictions
 
         self.world = []  # history of world states
@@ -51,8 +57,10 @@ class Agent_with_Alt_Sigmoid_Model():
         self.memory = memory
         self.behav_control = behav_control
         assert model_var >= 0, "model variance must be at least 0"
-        self.model_var = model_var # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        self.behav_model = normalize(2*np.random.rand(state_size, state_size)-1, axis=1, norm = 'l2')*self.model_var
+        # behavioral model applies some randomness or "personality" to how behavior gets adjusted
+        self.model_var = model_var
+        self.behav_model = normalize(
+            2*np.random.rand(state_size, state_size)-1, axis=1, norm='l2')*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
         # TODO - parameterize this. It's a neat idea, but I don't know how it works yet.
         # self.model_thresh = .95
@@ -68,7 +76,8 @@ class Agent_with_Alt_Sigmoid_Model():
         Create new random behavior, initialized as the first behavioral prior was.
         '''
         self.b_priors = np.random.normal(0, 1, self.state_size)
-        self.b_priors = matrix_sigmoid((2*self.b_priors-1)*self.behav_initial_spread)
+        self.b_priors = matrix_sigmoid(
+            (2*self.b_priors-1)*self.behav_initial_spread)
 
     def make_behavior(self):
         '''
@@ -140,16 +149,36 @@ class Agent_with_Alt_Sigmoid_Model():
         else:
             for m in range(1, mem+1):
                 if m == 1:
-                    sum_pred = self.past_predictions[-1] # grab first prior prediction to start the array.
+                    # grab first prior prediction to start the array.
+                    sum_pred = self.past_predictions[-1]
                 else:
                     i = -1 * m
                     sum_pred = [g + h for g,
                                 h in zip(sum_pred, self.past_predictions[i])]
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
-        top = sum_pred + dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
+        top = sum_pred + \
+            dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
         # print(top)
         self.world_pred = top / (mem+1)
+
+    def attention(self):
+        mem = int(min(self.memory, len(self.world)))
+        for m in range(1, mem+1):
+            if m == 1:
+                # grab first behavior to start the array.
+                sum_world = self.world[-1]
+                sum_pred = self.past_predictions[-1]
+            else:
+                i = -1 * m
+                sum_world = [g + h for g,
+                             h in zip(sum_world, self.world[i])]
+                sum_pred = [g + h for g,
+                            h in zip(sum_pred, self.past_predictions[i])]
+        world_score = [2((w / mem) - 0.5) ** 2 for w in sum_world]
+        pred_score = [(p / mem) / 2 for p in sum_pred]
+        for i in range(len(self.world[0])):
+            self.attn[i][i] = world_score + pred_score
 
     def get_cost(self):
         '''
@@ -185,9 +214,9 @@ def dynamic_sigmoid(i, x):
     '''
     Helper sigmoid function where the intercept is a value of i (list)
     '''
-    y = np.exp(np.clip(-x, -100, 100)) # avoid runover into infinity.
+    y = np.exp(np.clip(-x, -100, 100))  # avoid runover into infinity.
     out = np.asarray([1 / (1 + ((1 - np.clip(i[j], 1e-50, 1-1e-50))/np.clip(i[j], 1e-50, 1-1e-50)) * y[j])
-            for j in range(len(i))]) # changed clips to keep sigmoid function from getting stuck at 0 or 1
+                      for j in range(len(i))])  # changed clips to keep sigmoid function from getting stuck at 0 or 1
     return out
 
 

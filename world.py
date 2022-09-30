@@ -6,6 +6,7 @@ from old_versions.agent_with_model import Agent_with_Model
 from agents.agent_with_sigmoid_model import Agent_with_Sigmoid_Model
 from old_versions.agent_with_linear_model import Agent_with_Linear_Model
 from agents.agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
+from agents.agent_bayes import Agent_Bayes
 import numpy as np
 import argparse
 
@@ -34,8 +35,8 @@ class World():
     """
 
     def __init__(self, state_size=3, time=100, agent=["model_alt", "model_alt"],
-        seed=None, memory=[0, 0], behav_control=[0, 0], model_var=[1, 1],
-        behav_initial_spread=[1, 1], pred_initial_spread=[1, 1], change_points = [[None], [None]], agent_n=2):
+                 seed=None, memory=[0, 0], behav_control=[0, 0], model_var=[1, 1],
+                 behav_initial_spread=[1, 1], pred_initial_spread=[1, 1], change_points=[[None], [None]], agent_n=2):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -60,11 +61,14 @@ class World():
             # these do not need to be integers
             assert i >= 0, "model variance must be >= 0"
         for i in change_points:
-            assert isinstance(i, list), 'each entry in change_points must be a list of intergers'
+            assert isinstance(
+                i, list), 'each entry in change_points must be a list of intergers'
         self.change_points = change_points
         self.model_var = model_var  # behavioral control of the agents
-        self.behav_initial_spread = behav_initial_spread  # adjust bimodal distribution of b_priors
-        self.pred_initial_spread = pred_initial_spread  # adjust bimodal distribution of predictions
+        # adjust bimodal distribution of b_priors
+        self.behav_initial_spread = behav_initial_spread
+        # adjust bimodal distribution of predictions
+        self.pred_initial_spread = pred_initial_spread
 
         # variables to be filled as the experiment runs
         self.agents = []
@@ -84,6 +88,10 @@ class World():
             n -= 1
             if self.type[n-1] == "model":
                 self.agents.append(Agent_with_Model(
+                    state_size=self.state_size, memory=float(self.memory[n-1]),
+                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
+            elif self.type[n-1] == "bayes":
+                self.agents.append(Agent_Bayes(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "model_sig":

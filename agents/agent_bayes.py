@@ -29,7 +29,7 @@ class Agent_Bayes():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, seed=None, memory=7, behav_control=0, model_var=1., behav_initial_spread=1., pred_initial_spread=1., inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=7, behav_control=0, model_var=1, behav_initial_spread=1, pred_initial_spread=1, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -49,13 +49,13 @@ class Agent_Bayes():
         # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
         self.pred_initial_spread = pred_initial_spread
         assert pred_initial_spread >= 0, "pred_initial_spread must be >= 0"
-        self.world_pred = matrix_sigmoid(
-            (self.world_pred)*self.pred_initial_spread)
-
+        # self.world_pred = matrix_sigmoid(
+        #    (self.world_pred)*self.pred_initial_spread)
         self.world = []  # history of world states
         assert memory >= 7, "memory must be >= 7"
-        self.memory = memory
+        self.memory = int(memory)
         self.behav_control = behav_control
+        self.past_priors = []  # stores past behavioral priors.
         assert model_var >= 0, "model variance must be at least 0"
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         self.model_var = model_var
@@ -82,6 +82,7 @@ class Agent_Bayes():
         '''
         Generate actual behavior (list of 0/1) from priors
         '''
+        self.past_priors.append(self.b_priors)
         return np.random.binomial(1, self.b_priors)
 
     def make_prediction(self):
@@ -107,6 +108,12 @@ class Agent_Bayes():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
+        if len(self.world[-1]) != len(self.world_pred):
+            raise ValueError("state sizes between agents must match")
+        dif = self.world[-1] - \
+            self.world_pred  # array of differences, for each behavioral feature
+        avg_abs_error = np.sum(abs(dif))/len(dif)
+        return dif, avg_abs_error
 
     def learn_conform(self):
         '''
@@ -134,11 +141,12 @@ class Agent_Bayes():
         Bayesian posterior estimate of other agent's priors, dictating behviors.
         '''
         if len(self.world) > self.memory:
+            print(self.memory)
             recent_behaviors = self.world[-self.memory:]
             new_a = [sum(i) for i in zip(*recent_behaviors)]
-            new_b = [self.memory - i for i in range(new_a)]
-            new_b = len(recent_behaviors) - new_a
-            new_mode = []
+            new_b = [self.memory - i for i in new_a]
+            #new_b = len(recent_behaviors) - new_a
+            new_mode = self.world_pred
             for i in range(self.state_size):
                 if new_a[i] > 1 and new_b[i] > 1:
                     new_mode[i] = (new_a[i]-1)/(new_a[i]+new_b[i]-2)
@@ -160,6 +168,7 @@ class Agent_Bayes():
                     (self.alpha[i]+self.beta[i]-2)
             else:
                 self.world_pred[i] = self.alpha[i]/(self.alpha[i]+self.beta[i])
+        print(self.world_pred)
 
     def attention(self):
         mem = int(min(self.memory, len(self.world)))
@@ -199,14 +208,14 @@ class Agent_Bayes():
         '''
         Get the agent type.
         '''
-        return "model_alt"
+        return "bayes"
 
 
 def matrix_sigmoid(x):
     '''
     Helper sigmoid function where the intercept is 0.5
     '''
-    return 1 / (1 + np.exp(-x))
+    return 1 / (1 + np.exp(-1*x))
 
 
 def dynamic_sigmoid(i, x):

@@ -7,6 +7,7 @@ from agents.agent_with_sigmoid_model import Agent_with_Sigmoid_Model
 from old_versions.agent_with_linear_model import Agent_with_Linear_Model
 from agents.agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
 from agents.agent_bayes import Agent_Bayes
+from agents.agent_beta import Agent_Beta
 import numpy as np
 import argparse
 
@@ -72,11 +73,19 @@ class World():
 
         # variables to be filled as the experiment runs
         self.agents = []
-        self.b_priors = []
-        self.behaviors = []
-        self.predictions = []
-        self.errors = []
-        self.costs = []
+        '''
+        self.b_priors = np.empty((self.agent_n, self.state_size))
+        self.behaviors = np.empty((self.agent_n, self.state_size))
+        self.predictions = np.empty((self.agent_n, self.state_size))
+        self.errors = np.empty((self.agent_n, self.state_size))
+        self.avg_predictability = np.empty((self.agent_n, 1))
+        '''
+        self.b_priors = [[] for a in range(self.agent_n)]
+        self.behaviors = [[] for a in range(self.agent_n)]
+        self.predictions = [[] for a in range(self.agent_n)]
+        self.errors = [[] for a in range(self.agent_n)]
+        self.avg_predictability = [[a] for a in range(self.agent_n)]
+        self.costs = [[] for a in range(self.agent_n)]
 
     def create_agents(self):
         '''
@@ -91,6 +100,10 @@ class World():
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "bayes":
+                self.agents.append(Agent_Bayes(
+                    state_size=self.state_size, memory=float(self.memory[n-1]),
+                    behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
+            elif self.type[n-1] == "beta":
                 self.agents.append(Agent_Bayes(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
@@ -131,44 +144,65 @@ class World():
         Run experiment and record results.
         '''
         time_left = self.time
+        '''
+        # run first iteration
+        for i in range(len(self.agents)):
+            b = self.agents[i].make_behavior()
+            p = self.agents[i].get_behav_priors()
+            predictability = [abs(x-0.5)*2 for x in p]
+            avg_pred = sum(predictability)/len(predictability)
+            self.avg_predictability[i] = avg_pred
+            self.behaviors[i] = b
+            self.b_priors[i] = p
+        print("b:", self.behaviors)
+        for i in range(len(self.agents)):
+            if i == 0:
+                # agent 0 gets agent 1's behavior
+                self.agents[i].get_world(self.behaviors[1][-1])
+            else:
+                # agent 1 gets agent 0's behavior
+                self.agents[i].get_world(self.behaviors[0][-1])
+            p = self.agents[i].make_prediction()
+            dif, avg_abs_error = self.agents[i].behavior_prediction_error()
+            self.agents[i].learn_conform()
+            self.agents[i].learn_predict_world()
+            self.predictions[i] = p
+            self.errors[i] = dif
+            self.costs[i] = avg_abs_error
+        '''
+        # rest of the trials
         while time_left:
             # generate behaviors
-            prior = []
-            behavior = []
             current_time = self.time - time_left
             for i in range(len(self.agents)):
                 if current_time in self.change_points[i]:
                     self.agents[i].new_behavior()
                 b = self.agents[i].make_behavior()
                 p = self.agents[i].get_behav_priors()
-                behavior.append(b)
-                prior.append(p)
-                # print("behavior of agent {}: ".format(i) + str(behavior))
-            self.behaviors.append(behavior)
-            self.b_priors.append(prior)
+                predictability = [abs(x-0.5)*2 for x in p]
+                avg_pred = sum(predictability)/len(predictability)
+                self.avg_predictability[i].append(avg_pred)
+                self.behaviors[i].append(b)
+                self.b_priors[i].append(p)
 
             # receive behaviors, predict, learn
             # will have to be updated for multi agents
-            prediction = []
-            error = []
-            cost = []
             for i in range(len(self.agents)):
                 if i == 0:
                     # agent 0 gets agent 1's behavior
-                    self.agents[i].get_world(self.behaviors[-1][1])
+                    self.agents[i].get_world(self.behaviors[1][-1])
                 else:
                     # agent 1 gets agent 0's behavior
-                    self.agents[i].get_world(self.behaviors[-1][0])
+                    self.agents[i].get_world(self.behaviors[0][-1])
                 p = self.agents[i].make_prediction()
                 dif, avg_abs_error = self.agents[i].behavior_prediction_error()
                 self.agents[i].learn_conform()
                 self.agents[i].learn_predict_world()
-                prediction.append(p)
-                error.append(dif)
-                cost.append(avg_abs_error)
-            self.predictions.append(prediction)
-            self.errors.append(error)
-            self.costs.append(cost)
+                # record results
+                self.predictions[i].append(p)
+                self.errors[i].append(dif)
+                self.costs[i].append(avg_abs_error)
+                print(self.costs)
             time_left -= 1
 
     def get_agents(self):
@@ -182,33 +216,42 @@ class World():
         '''
         Get a representation of the errors so each list is an agents error across time.
         '''
-        error_array = np.array(self.errors)
-        error_T = error_array.T
-        return error_T
+        #error_array = np.array(self.errors)
+        #error_T = error_array.T
+        return self.errors
 
     def get_costs(self):
         '''
         Get a representation of the costs so each list is an agents cost across time (cumulative error).
         '''
-        cost_array = np.array(self.costs)
-        cost_T = cost_array.T
-        return cost_T
+        #cost_array = np.array(self.costs)
+        #cost_T = cost_array.T
+        return self.costs
 
     def get_pred(self):
         '''
         Get a representation of the predictions so each list is an agents prediction across time.
         '''
-        pred_array = np.array(self.predictions)
-        pred_T = pred_array.T
-        return pred_T
+        #pred_array = np.array(self.predictions)
+        #pred_T = pred_array.T
+        return self.predictions
 
     def get_behav_priors(self):
         '''
         Get a representation of the priors so each list is an agent's behavioral priors across time.
         '''
-        prior_array = np.array(self.b_priors)
-        prior_T = prior_array.T
-        return prior_T
+        #prior_array = np.array(self.b_priors)
+        #prior_T = prior_array.T
+        return self.b_priors
+
+    def get_predictability(self):
+        '''
+        Get the average predictability score of the priors of each agent:
+        1 = predictable (0 or 1)
+        ...
+        0 = unpredictable (0.5)
+        '''
+        return self.avg_predictability
 
     def print_results(self):
         '''
@@ -221,16 +264,17 @@ class World():
             print("  ---  ")
 
         print("\n")
-        for i in range(self.time):
-            print("time step:   {}".format(i+1))
-            print("bhv priors:  {}".format(
-                [b.tolist() for b in np.round(self.b_priors[i], 3)]))
-            print("behaviors:   {}".format(
-                [b.tolist() for b in self.behaviors[i]]))
-            print("predictions: {}".format(
-                [b.tolist() for b in np.round(self.predictions[i], 3)]))
-            print("errors:      {}".format(self.errors[i]))
-            print("net costs:   {}".format(np.round(self.costs[i], 3)))
+        for t in range(self.time):
+            print("time step:   {}".format(t+1))
+            for a in range(self.agents_n):
+                print("bhv priors:  {}".format(
+                    [b.tolist() for b in np.round(self.b_priors[a][t], 3)]))
+                print("behaviors:   {}".format(
+                    [b.tolist() for b in self.behaviors[a][t]]))
+                print("predictions: {}".format(
+                    [b.tolist() for b in np.round(self.predictions[a][t], 3)]))
+                print("errors:      {}".format(self.errors[a][t]))
+                print("net costs:   {}".format(np.round(self.costs[a][t], 3)))
             print("  ---  ")
 
 

@@ -27,6 +27,7 @@ class Agent_Dummy():
             seed = np.random.choice(1000, 1)[0]
         np.random.seed(seed)
         self.b_priors = np.random.choice(2, state_size)
+        print(self.b_priors)
         # current behavior
         self.behavior = []
         # estimate of world state parameters

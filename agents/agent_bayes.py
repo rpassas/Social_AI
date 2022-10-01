@@ -1,5 +1,5 @@
 import numpy as np
-import scipy
+import scipy.stats as stats
 from sklearn.preprocessing import normalize
 
 
@@ -33,7 +33,8 @@ class Agent_Bayes():
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
-        self.b_priors = np.random.normal(0, 1, self.state_size)
+        self.b_priors = np.random.uniform(0, 1, self.state_size)
+        print(self.b_priors)
         # self.behav_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
         self.behav_initial_spread = behav_initial_spread
         assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
@@ -41,8 +42,9 @@ class Agent_Bayes():
             (self.b_priors)*self.behav_initial_spread)
         self.possible_priors = np.linspace(0, 1, 100)  # stores possible priors
         # alphas and betas for beta distribution to estimate priors of others
-        self.alpha = np.random.normal(2, 4, self.state_size)
-        self.beta = np.random.normal(2, 4, self.state_size)
+        # np.random.normal(2, 4, self.state_size)
+        self.alpha = [2]*self.state_size
+        self.beta = [2]*self.state_size
         # threshold for re weighting more recent experience
         self.threshold = 0.2
         self.world_pred = [0.5]*state_size
@@ -108,11 +110,15 @@ class Agent_Bayes():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
+        print("bayes pred", self.world_pred)
+        print("alt behavior", self.world[-1])
         if len(self.world[-1]) != len(self.world_pred):
             raise ValueError("state sizes between agents must match")
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
+        print("bayes dif", dif)
         avg_abs_error = np.sum(abs(dif))/len(dif)
+        print(avg_abs_error)
         return dif, avg_abs_error
 
     def learn_conform(self):
@@ -139,36 +145,22 @@ class Agent_Bayes():
     def learn_predict_world(self):
         '''
         Bayesian posterior estimate of other agent's priors, dictating behviors.
+        1. generate priors given all past observed behaviors
+        2. generate likelihood of the observations given the prior
+        3. get the posterior given the observations
+        4. prediction = argmax of the largest prediction
         '''
-        if len(self.world) > self.memory:
-            print(self.memory)
-            recent_behaviors = self.world[-self.memory:]
-            new_a = [sum(i) for i in zip(*recent_behaviors)]
-            new_b = [self.memory - i for i in new_a]
-            #new_b = len(recent_behaviors) - new_a
-            new_mode = self.world_pred
-            for i in range(self.state_size):
-                if new_a[i] > 1 and new_b[i] > 1:
-                    new_mode[i] = (new_a[i]-1)/(new_a[i]+new_b[i]-2)
-                else:
-                    new_mode[i] = new_a[i]/(new_a[i]+new_b[i])
-
-                if abs(new_mode[i] - self.world_pred[i]) > self.threshold:
-                    # reset memory to be shorter (forget likely useless data)
-                    self.world = self.world[-self.memory:]
-                    self.alpha[i] = new_a[i]
-                    self.beta[i] = new_b[i]
-                else:
-                    self.alpha[i] = self.alpha[i]+self.world[-1][i]
-                    self.beta[i] = self.beta[i]-self.world[-1][i]+1
-        for i in range(self.state_size):
-            #dist = scipy.stats.beta.pdf(x=self.possible_priors, a=self.alpha[i], b=self.beta[i])
-            if self.alpha[i] > 1 and self.beta[i] > 1:
-                self.world_pred[i] = (self.alpha[i]-1) / \
-                    (self.alpha[i]+self.beta[i]-2)
-            else:
-                self.world_pred[i] = self.alpha[i]/(self.alpha[i]+self.beta[i])
-        print(self.world_pred)
+        self.alpha = [x + y for x, y in zip(self.alpha, self.world[-1])]
+        self.beta = [x - y + 1 for x, y in zip(self.beta, self.world[-1])]
+        prior_dist = [stats.beta.cdf(x=self.possible_priors+.001, a=self.alpha[i], b=self.beta[i]) - stats.beta.cdf(
+            x=self.possible_priors, a=self.alpha[i], b=self.beta[i]) for i in range(self.state_size)]
+        likelihood_dist = [stats.binom.pmf(
+            k=self.alpha[i], n=len(self.world)+2, p=self.possible_priors) for i in range(self.state_size)]
+        posterior_dist = [prior_dist[i]*likelihood_dist[i]
+                          for i in range(len(prior_dist))]
+        norm_posterior_dist = [p/sum(p) for p in posterior_dist]
+        self.world_pred = [np.argmax(norm_posterior_dist[i])/100
+                           for i in range(self.state_size)]
 
     def attention(self):
         mem = int(min(self.memory, len(self.world)))

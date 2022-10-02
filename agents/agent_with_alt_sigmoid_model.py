@@ -111,7 +111,7 @@ class Agent_with_Alt_Sigmoid_Model():
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
         print("alt pred", self.world_pred)
-        print("bayes world", self.world[-1])
+        print("bayes behavior", self.world[-1])
         if len(self.world[-1]) != len(self.world_pred):
             raise ValueError("state sizes between agents must match")
         dif = self.world[-1] - \
@@ -162,7 +162,6 @@ class Agent_with_Alt_Sigmoid_Model():
         attn_weighted_dif = self.attn @ dif
         top = sum_pred + \
             dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
-        # print(top)
         self.world_pred = top / (mem+1)
 
     def attention(self):
@@ -178,7 +177,7 @@ class Agent_with_Alt_Sigmoid_Model():
                              h in zip(sum_world, self.world[i])]
                 sum_pred = [g + h for g,
                             h in zip(sum_pred, self.past_predictions[i])]
-        world_score = [2((w / mem) - 0.5) ** 2 for w in sum_world]
+        world_score = [2*((w / mem) - 0.5) ** 2 for w in sum_world]
         pred_score = [(p / mem) / 2 for p in sum_pred]
         for i in range(len(self.world[0])):
             self.attn[i][i] = world_score + pred_score

@@ -202,7 +202,8 @@ class World():
                 self.predictions[i].append(p)
                 self.errors[i].append(dif)
                 self.costs[i].append(avg_abs_error)
-                print(self.costs)
+                print("COST:", self.costs)
+                print("\n")
             time_left -= 1
 
     def get_agents(self):

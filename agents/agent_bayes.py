@@ -34,7 +34,6 @@ class Agent_Bayes():
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
         self.b_priors = np.random.uniform(0, 1, self.state_size)
-        print(self.b_priors)
         # self.behav_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
         self.behav_initial_spread = behav_initial_spread
         assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
@@ -118,7 +117,7 @@ class Agent_Bayes():
             self.world_pred  # array of differences, for each behavioral feature
         print("bayes dif", dif)
         avg_abs_error = np.sum(abs(dif))/len(dif)
-        print(avg_abs_error)
+        print("bayes avg error", avg_abs_error)
         return dif, avg_abs_error
 
     def learn_conform(self):

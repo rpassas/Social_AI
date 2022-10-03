@@ -29,7 +29,7 @@ class Agent_Bayes():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, seed=None, memory=7, behav_control=0, model_var=1, behav_initial_spread=1, pred_initial_spread=1, inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=0, behav_control=0, model_var=1, behav_initial_spread=1, pred_initial_spread=1, inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -53,7 +53,7 @@ class Agent_Bayes():
         # self.world_pred = matrix_sigmoid(
         #    (self.world_pred)*self.pred_initial_spread)
         self.world = []  # history of world states
-        assert memory >= 7, "memory must be >= 7"
+        assert memory >= 0, "memory must be >= 0"
         self.memory = int(memory)
         self.behav_control = behav_control
         self.past_priors = []  # stores past behavioral priors.
@@ -109,15 +109,15 @@ class Agent_Bayes():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
-        print("bayes pred", self.world_pred)
-        print("alt behavior", self.world[-1])
+        #print("bayes pred", self.world_pred)
+        #print("alt behavior", self.world[-1])
         if len(self.world[-1]) != len(self.world_pred):
             raise ValueError("state sizes between agents must match")
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
-        print("bayes dif", dif)
+        #print("bayes dif", dif)
         avg_abs_error = np.sum(abs(dif))/len(dif)
-        print("bayes avg error", avg_abs_error)
+        #print("bayes avg error", avg_abs_error)
         return dif, avg_abs_error
 
     def learn_conform(self):
@@ -174,7 +174,7 @@ class Agent_Bayes():
                              h in zip(sum_world, self.world[i])]
                 sum_pred = [g + h for g,
                             h in zip(sum_pred, self.past_predictions[i])]
-        world_score = [2((w / mem) - 0.5) ** 2 for w in sum_world]
+        world_score = [2*((w / mem) - 0.5) ** 2 for w in sum_world]
         pred_score = [(p / mem) / 2 for p in sum_pred]
         for i in range(len(self.world[0])):
             self.attn[i][i] = world_score + pred_score

@@ -7,7 +7,7 @@ from agents.agent_with_sigmoid_model import Agent_with_Sigmoid_Model
 from old_versions.agent_with_linear_model import Agent_with_Linear_Model
 from agents.agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
 from agents.agent_bayes import Agent_Bayes
-from agents.agent_beta import Agent_Beta
+from agents.agent_semi_bayes import Agent_Semi_Bayes
 import numpy as np
 import argparse
 
@@ -103,8 +103,8 @@ class World():
                 self.agents.append(Agent_Bayes(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
-            elif self.type[n-1] == "beta":
-                self.agents.append(Agent_Bayes(
+            elif self.type[n-1] == "semi_bayes":
+                self.agents.append(Agent_Semi_Bayes(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "model_sig":

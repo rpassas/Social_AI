@@ -3,7 +3,7 @@ import scipy.stats as stats
 from sklearn.preprocessing import normalize
 
 
-class Agent_Bayes():
+class Agent_Semi_Bayes():
     """
     This agent has an internal model, consisting of a covariance matrix from which it can draw from
     to output behavior and adjust based on errors. An additional matrix determines attention to particular
@@ -121,34 +121,33 @@ class Agent_Bayes():
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
-        #print("bayes pred", self.world_pred)
-        #print("alt behavior", self.world[-1])
         if len(self.world[-1]) != len(self.world_pred):
             raise ValueError("state sizes between agents must match")
         dif = self.world[-1] - \
             self.world_pred  # array of differences, for each behavioral feature
-        #print("bayes dif", dif)
         avg_abs_error = np.sum(abs(dif))/len(dif)
-        #print("bayes avg error", avg_abs_error)
         return dif, avg_abs_error
 
     def learn_conform(self):
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
-        self.alpha_conf = [x + y for x,
-                           y in zip(self.alpha_conf, self.current_behavior)]
-        self.beta_conf = [x - y + 1 for x,
-                          y in zip(self.beta_pred, self.current_behavior)]
-        prior_dist = [stats.beta.cdf(x=self.possible_priors+.001, a=self.alpha_conf[i], b=self.beta_conf[i]) - stats.beta.cdf(
-            x=self.possible_priors, a=self.alpha_conf[i], b=self.beta_conf[i]) for i in range(self.state_size)]
-        likelihood_dist = [stats.binom.pmf(
-            k=self.alpha_conf[i], n=len(self.world)+2, p=self.possible_priors) for i in range(self.state_size)]
-        posterior_dist = [prior_dist[i]*likelihood_dist[i]
-                          for i in range(len(prior_dist))]
-        norm_posterior_dist = [p/sum(p) for p in posterior_dist]
-        self.b_priors = [np.argmax(norm_posterior_dist[i])/100
-                         for i in range(self.state_size)]
+        mem = int(min(self.behav_control, len(self.past_priors)))
+        if mem == 0:
+            sum_priors = 0
+        else:
+            for m in range(1, mem+1):
+                if m == 1:
+                    sum_priors = self.past_priors[-1]
+                else:
+                    i = -1 * m
+                    sum_priors = [g + h for g,
+                                  h in zip(sum_priors, self.past_priors[i])]
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        updated_dif = self.behav_model @ attn_weighted_dif
+        top = sum_priors + dynamic_sigmoid(self.past_priors[-1], updated_dif)
+        self.b_priors = top / (mem + 1)
 
     def learn_predict_world(self):
         '''

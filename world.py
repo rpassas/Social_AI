@@ -84,7 +84,7 @@ class World():
         self.behaviors = [[] for a in range(self.agent_n)]
         self.predictions = [[] for a in range(self.agent_n)]
         self.errors = [[] for a in range(self.agent_n)]
-        self.avg_predictability = [[a] for a in range(self.agent_n)]
+        self.avg_predictability = [[] for a in range(self.agent_n)]
         self.costs = [[] for a in range(self.agent_n)]
 
     def create_agents(self):
@@ -179,11 +179,13 @@ class World():
                     self.agents[i].new_behavior()
                 b = self.agents[i].make_behavior()
                 p = self.agents[i].get_behav_priors()
-                predictability = [abs(x-0.5)*2 for x in p]
-                avg_pred = sum(predictability)/len(predictability)
-                self.avg_predictability[i].append(avg_pred)
+                a_p = self.agents[i].get_predictability()
+                #predictability = [abs(x-0.5)*2 for x in p]
+                #avg_pred = sum(predictability)/len(predictability)
+                # self.avg_predictability[i].append(avg_pred)
                 self.behaviors[i].append(b)
                 self.b_priors[i].append(p)
+                self.avg_predictability[i].append(a_p)
 
             # receive behaviors, predict, learn
             # will have to be updated for multi agents

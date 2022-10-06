@@ -53,7 +53,8 @@ class Agent_with_Sigmoid_Model():
         assert model_var >= 0, "model variance must be >= 0"
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        self.behav_model = np.random.rand(state_size, state_size)*self.model_var
+        self.behav_model = np.random.rand(
+            state_size, state_size)*self.model_var
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
@@ -66,6 +67,14 @@ class Agent_with_Sigmoid_Model():
         '''
         self.past_priors.append(self.b_priors)
         return np.random.binomial(1, self.b_priors)
+
+    def get_predictability(self):
+        '''
+        Returns the predictability of the agents where a score of 1 indicates priors 
+        being close to 0 or 1 (taken as an average across predictability of each prior).
+        '''
+        predictability = [(abs(p - 0.5))*2 for p in self.b_priors]
+        return sum(predictability)/len(predictability)
 
     def make_prediction(self):
         '''

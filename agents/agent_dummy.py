@@ -53,6 +53,14 @@ class Agent_Dummy():
         '''
         return self.b_priors
 
+    def get_predictability(self):
+        '''
+        Returns the predictability of the agents where a score of 1 indicates priors 
+        being close to 0 or 1 (taken as an average across predictability of each prior).
+        '''
+        predictability = [(abs(p - 0.5))*2 for p in self.b_priors]
+        return sum(predictability)/len(predictability)
+
     def make_prediction(self):
         '''
         Generate actual world prediction (list of 0/1) from priors

@@ -11,7 +11,7 @@ likelihood of particular qualities of a state.
 
 possible models:
 - maximum likelihood
-- bayesian
+- variational inference
 - maximum uniform distribution
 - sequence of pdf
 - maximum a posteriori

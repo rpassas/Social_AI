@@ -45,6 +45,7 @@ class Agent_Average_Prediction():
         # past predictions
         self.past_predictions = []
         # function for estimating parameters
+        self.attn = np.identity(self.state_size)  # attention matrix
 
         # priors adjustment rate
         if alpha > 1 or alpha < 0:
@@ -165,7 +166,21 @@ class Agent_Average_Prediction():
         self.world_pred = new_pred
         '''
 
-    def get_cost(self):
+    def get_attention(self):
+        return self.attn
+
+    def get_costs(self):
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        return attn_weighted_dif
+
+    def get_avg_costs(self):
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        avg_attn_dif = np.sum(abs(attn_weighted_dif))/len(attn_weighted_dif)
+        return avg_attn_dif
+
+    def get_total_cost(self):
         '''
         Get the cost so far.
         '''

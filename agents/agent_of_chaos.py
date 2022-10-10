@@ -56,6 +56,7 @@ class Agent_of_Chaos():
             self.beta = 0.01
         else:
             self.beta = beta
+        self.attn = np.identity(self.state_size)  # attention matrix
 
     def make_behavior(self):
         '''
@@ -129,7 +130,21 @@ class Agent_of_Chaos():
             self.world_pred = [np.asarray([
                 abs(i - r) if abs(i - r) <= 1 else i for i in self.world_pred])][0]
 
-    def get_cost(self):
+    def get_attention(self):
+        return self.attn
+
+    def get_costs(self):
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        return attn_weighted_dif
+
+    def get_avg_costs(self):
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        avg_attn_dif = np.sum(abs(attn_weighted_dif))/len(attn_weighted_dif)
+        return avg_attn_dif
+
+    def get_total_cost(self):
         '''
         Get the cost so far.
         '''

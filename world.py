@@ -86,6 +86,7 @@ class World():
         self.errors = [[] for a in range(self.agent_n)]
         self.avg_predictability = [[] for a in range(self.agent_n)]
         self.costs = [[] for a in range(self.agent_n)]
+        self.avg_abs_error = [[] for a in range(self.agent_n)]
 
     def create_agents(self):
         '''
@@ -168,7 +169,7 @@ class World():
             self.agents[i].learn_predict_world()
             self.predictions[i] = p
             self.errors[i] = dif
-            self.costs[i] = avg_abs_error
+            self.avg_abs_error[i] = avg_abs_error
         '''
         # rest of the trials
         while time_left:
@@ -198,13 +199,16 @@ class World():
                     self.agents[i].get_world(self.behaviors[0][-1])
                 p = self.agents[i].make_prediction()
                 dif, avg_abs_error = self.agents[i].behavior_prediction_error()
+                c = self.agents[i].get_avg_costs()
                 self.agents[i].learn_conform()
                 self.agents[i].learn_predict_world()
+                self.agents[i].update_attention()
                 # record results
+                self.costs[i].append(c)
                 self.predictions[i].append(p)
                 self.errors[i].append(dif)
-                self.costs[i].append(avg_abs_error)
-                #print("COST:", self.costs)
+                self.avg_abs_error[i].append(avg_abs_error)
+                #print("COST:", self.avg_abs_error)
                 # print("\n")
             time_left -= 1
 
@@ -223,13 +227,13 @@ class World():
         #error_T = error_array.T
         return self.errors
 
-    def get_costs(self):
+    def get_avg_abs_error(self):
         '''
-        Get a representation of the costs so each list is an agents cost across time (cumulative error).
+        Get a representation of the avg_abs_error so each list is an agents cost across time (cumulative error).
         '''
-        #cost_array = np.array(self.costs)
+        #cost_array = np.array(self.avg_abs_error)
         #cost_T = cost_array.T
-        return self.costs
+        return self.avg_abs_error
 
     def get_pred(self):
         '''
@@ -256,6 +260,15 @@ class World():
         '''
         return self.avg_predictability
 
+    def get_costs(self):
+        '''
+        Get the average predictability score of the priors of each agent:
+        1 = predictable (0 or 1)
+        ...
+        0 = unpredictable (0.5)
+        '''
+        return self.costs
+
     def print_results(self):
         '''
         Print the results of the experiment.
@@ -277,7 +290,8 @@ class World():
                 print("predictions: {}".format(
                     [b.tolist() for b in np.round(self.predictions[a][t], 3)]))
                 print("errors:      {}".format(self.errors[a][t]))
-                print("net costs:   {}".format(np.round(self.costs[a][t], 3)))
+                print("net avg_abs_error:   {}".format(
+                    np.round(self.avg_abs_error[a][t], 3)))
             print("  ---  ")
 
 

@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from sklearn.preprocessing import normalize
 
 
@@ -169,7 +170,11 @@ class Agent_with_Alt_Sigmoid_Model():
             dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
         self.world_pred = top / (mem+1)
 
-    def attention(self):
+    def update_attention(self):
+        attention = [-((p * math.log(p, 2)) + ((1-p) * math.log(1-p,  2)))
+                     for p in self.world_pred]
+        self.attn = np.diag(attention)
+        '''
         mem = int(min(self.memory, len(self.world)))
         for m in range(1, mem+1):
             if m == 1:
@@ -186,8 +191,23 @@ class Agent_with_Alt_Sigmoid_Model():
         pred_score = [(p / mem) / 2 for p in sum_pred]
         for i in range(len(self.world[0])):
             self.attn[i][i] = world_score + pred_score
+        '''
 
-    def get_cost(self):
+    def get_attention(self):
+        return self.attn
+
+    def get_costs(self):
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        return attn_weighted_dif
+
+    def get_avg_costs(self):
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        avg_attn_dif = np.sum(abs(attn_weighted_dif))/len(attn_weighted_dif)
+        return avg_attn_dif
+
+    def get_total_cost(self):
         '''
         Get the cost so far.
         '''

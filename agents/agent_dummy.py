@@ -121,27 +121,7 @@ class Agent_Dummy():
                                <= 1 else i for i in self.world_pred]
 
     def update_attention(self):
-        attention = [-((p * math.log(p, 2)) + ((1-p) * math.log(1-p,  2)))
-                     for p in self.world_pred]
-        self.attn = np.diag(attention)
-        '''
-        mem = int(min(self.memory, len(self.world)))
-        for m in range(1, mem+1):
-            if m == 1:
-                # grab first behavior to start the array.
-                sum_world = self.world[-1]
-                sum_pred = self.past_predictions[-1]
-            else:
-                i = -1 * m
-                sum_world = [g + h for g,
-                             h in zip(sum_world, self.world[i])]
-                sum_pred = [g + h for g,
-                            h in zip(sum_pred, self.past_predictions[i])]
-        world_score = [2*((w / mem) - 0.5) ** 2 for w in sum_world]
-        pred_score = [(p / mem) / 2 for p in sum_pred]
-        for i in range(len(self.world[0])):
-            self.attn[i][i] = world_score + pred_score
-        '''
+        pass
 
     def get_attention(self):
         return self.attn

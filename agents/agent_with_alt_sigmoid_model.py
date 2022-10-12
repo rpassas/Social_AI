@@ -35,7 +35,7 @@ class Agent_with_Alt_Sigmoid_Model():
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
-        self.b_priors = np.random.uniform(0, 1, self.state_size)
+        self.b_priors = np.random.normal(0, 1, self.state_size)
         # self.behav_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
         self.behav_initial_spread = behav_initial_spread
         assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
@@ -130,6 +130,11 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        updated_dif = self.behav_model @ attn_weighted_dif
+        self.b_priors = dynamic_sigmoid(self.past_priors[-1], updated_dif)
+        '''
         mem = int(min(self.behav_control, len(self.past_priors)))
         if mem == 0:
             sum_priors = 0
@@ -146,11 +151,17 @@ class Agent_with_Alt_Sigmoid_Model():
         updated_dif = self.behav_model @ attn_weighted_dif
         top = sum_priors + dynamic_sigmoid(self.past_priors[-1], updated_dif)
         self.b_priors = top / (mem + 1)
+        '''
 
     def learn_predict_world(self):
         '''
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
+        '''
+        dif, avg_abs_error = self.behavior_prediction_error()
+        attn_weighted_dif = self.attn @ dif
+        self.world_pred = dynamic_sigmoid(
+            self.past_predictions[-1], attn_weighted_dif)
         '''
         mem = int(min(self.memory, len(self.past_predictions)))
         if mem == 0:
@@ -169,6 +180,7 @@ class Agent_with_Alt_Sigmoid_Model():
         top = sum_pred + \
             dynamic_sigmoid(self.past_predictions[-1], attn_weighted_dif)
         self.world_pred = top / (mem+1)
+        '''
 
     def update_attention(self):
         attention = [-((p * math.log(p, 2)) + ((1-p) * math.log(1-p,  2)))

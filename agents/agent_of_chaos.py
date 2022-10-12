@@ -130,6 +130,9 @@ class Agent_of_Chaos():
             self.world_pred = [np.asarray([
                 abs(i - r) if abs(i - r) <= 1 else i for i in self.world_pred])][0]
 
+    def update_attention(self):
+        pass
+
     def get_attention(self):
         return self.attn
 

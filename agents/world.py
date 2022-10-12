@@ -1,13 +1,14 @@
-from agents.agent_of_chaos import Agent_of_Chaos
-from old_versions.agent_average_behavior import Agent_Average
-from agents.agent_average_prediction import Agent_Average_Prediction
-from agents.agent_dummy import Agent_Dummy
-from old_versions.agent_with_model import Agent_with_Model
-from agents.agent_with_sigmoid_model import Agent_with_Sigmoid_Model
-from old_versions.agent_with_linear_model import Agent_with_Linear_Model
-from agents.agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
-from agents.agent_bayes import Agent_Bayes
-from agents.agent_semi_bayes import Agent_Semi_Bayes
+from agent_of_chaos import Agent_of_Chaos
+#from old_versions.agent_average_behavior import Agent_Average
+from agent_average_prediction import Agent_Average_Prediction
+from agent_dummy import Agent_Dummy
+#from old_versions.agent_with_model import Agent_with_Model
+from agent_with_sigmoid_model import Agent_with_Sigmoid_Model
+#from old_versions.agent_with_linear_model import Agent_with_Linear_Model
+from agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
+from agent_bayes import Agent_Bayes
+from agent_semi_bayes import Agent_Semi_Bayes
+from agent import Agent
 import numpy as np
 import argparse
 
@@ -36,8 +37,9 @@ class World():
     """
 
     def __init__(self, state_size=3, time=100, agent=["model_alt", "model_alt"],
-                 seed=None, memory=[0, 0], behav_control=[0, 0], model_var=[1, 1],
-                 behav_initial_spread=[1, 1], pred_initial_spread=[1, 1], change_points=[[None], [None]], agent_n=2):
+                 seed=None, model_var=[1, 1], behav_initial_spread=[1, 1],
+                 pred_initial_spread=[1, 1], change_points=[[None], [None]], agent_n=2,
+                 prediction=["sigmoid", "sigmoid"], behavior=["sigmoid", "sigmoid"], attention=["static", "static"]):
         if seed:
             np.random.seed(seed)
         # argparse will make unfilled optional args 'None', so perform checks
@@ -48,16 +50,16 @@ class World():
         assert agent_n >= 2, "agent_n must be >= 2"  # number of agents
         self.agent_n = agent_n
         self.type = agent
-        assert len(
-            memory) == self.agent_n, 'memory must be a list, with as many entries as agent_n'
-        for i in memory:
-            assert type(i) == int, 'memory entries must be integers'
-        self.memory = memory  # memory of the agents
-        assert len(
-            behav_control) == self.agent_n, 'behav_control must be a list, with as many entries as agent_n'
-        for i in behav_control:
-            assert type(i) == int, 'behav_control entries must be integers'
-        self.behav_control = behav_control  # behavioral control of the agents
+        # assert len(
+        #    memory) == self.agent_n, 'memory must be a list, with as many entries as agent_n'
+        # for i in memory:
+        #    assert type(i) == int, 'memory entries must be integers'
+        self.memory = [0, 0]  # memory of the agents
+        # assert len(
+        #    behav_control) == self.agent_n, 'behav_control must be a list, with as many entries as agent_n'
+        # for i in behav_control:
+        #    assert type(i) == int, 'behav_control entries must be integers'
+        self.behav_control = [0, 0]  # behavioral control of the agents
         for i in model_var:
             # these do not need to be integers
             assert i >= 0, "model variance must be >= 0"
@@ -70,7 +72,10 @@ class World():
         self.behav_initial_spread = behav_initial_spread
         # adjust bimodal distribution of predictions
         self.pred_initial_spread = pred_initial_spread
-
+        # prediction, behavior, and attention update mechanisms
+        self.prediction = prediction
+        self.behavior = behavior
+        self.attention = attention
         # variables to be filled as the experiment runs
         self.agents = []
         '''
@@ -100,6 +105,11 @@ class World():
                 self.agents.append(Agent_with_Model(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
+            elif self.type[n-1] == "base":
+                self.agents.append(Agent(state_size=self.state_size,
+                                         model_var=self.model_var[n -
+                                                                  1], prediction=self.prediction[n-1],
+                                         behavior=self.behavior[n-1], attention=self.attention[n-1]))
             elif self.type[n-1] == "bayes":
                 self.agents.append(Agent_Bayes(
                     state_size=self.state_size, memory=float(self.memory[n-1]),
@@ -282,7 +292,7 @@ class World():
         print("\n")
         for t in range(self.time):
             print("time step:   {}".format(t+1))
-            for a in range(self.agents_n):
+            for a in range(self.agent_n):
                 print("bhv priors:  {}".format(
                     [b.tolist() for b in np.round(self.b_priors[a][t], 3)]))
                 print("behaviors:   {}".format(

@@ -143,7 +143,7 @@ class Agent():
         attn_weighted_dif = self.attn @ dif
         if self.pred_func == 'static':
             pass
-        elif self.behav_func == 'chaos':
+        elif self.pred_func == 'chaos':
             self.world_pred = self.chaotic_update(
                 self.world_pred, 0.2, avg_abs_error)
         elif self.pred_func == 'sigmoid':
@@ -151,6 +151,8 @@ class Agent():
                 center=self.world_pred, error=attn_weighted_dif)
         else:
             raise ValueError("Prediction update parameter invalid")
+
+    # def learn_model(self):
 
     def update_attention(self):
         if self.attn_func == 'static':

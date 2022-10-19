@@ -2,14 +2,14 @@ import numpy as np
 import math
 
 
-def matrix_sigmoid(self, x):
+def matrix_sigmoid(x):
     '''
     Helper sigmoid function where the intercept is 0.5
     '''
     return 1 / (1 + np.exp(-x))
 
 
-def chaotic_update(self, prob, threshold, error):
+def chaotic_update(prob, threshold, error):
     if error > threshold:
         magnitude = np.random.choice([-1, 1]) * error
         r = round(np.random.uniform(0, magnitude), 3)
@@ -19,7 +19,17 @@ def chaotic_update(self, prob, threshold, error):
     return prob
 
 
-def sigmoid_update(self, center, error):
+def linear_update(prev, error):
+    prob = error + prev
+    for i in range(len(prob)):
+        if prob[i] > 1:
+            prob[i] = 1
+        if prob[i] < 0:
+            prob[i] = 0
+    return prob
+
+
+def sigmoid_update(center, error):
     center = dynamic_sigmoid(center, error)
     return center
 
@@ -29,12 +39,15 @@ def dynamic_sigmoid(i, x):
     Helper sigmoid function where the intercept is a value of i (list)
     '''
     y = np.exp(np.clip(-x, -100, 100))  # avoid runover into infinity.
-    out = np.asarray([1 / (1 + ((1 - np.clip(i[j], 1e-50, 1-1e-50))/np.clip(i[j], 1e-50, 1-1e-50)) * y[j])
+    out = np.asarray([1 /
+     (1 + (
+         (1 - np.clip(i[j], 1e-50, 1-1e-50)) / np.clip(i[j], 1e-50, 1-1e-50)) * y[j])
+                      
                       for j in range(len(i))])  # changed clips to keep sigmoid function from getting stuck at 0 or 1
     return out
 
 
-def entropy(self, prob):
+def entropy(prob):
     '''
     Calculate the entropy of a probability vector
     '''

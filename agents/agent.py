@@ -2,6 +2,7 @@ import numpy as np
 #from utility import matrix_sigmoid
 import scipy.stats as stats
 from sklearn.preprocessing import normalize
+from agents.utils.utility import sigmoid_update, chaotic_update, entropy, matrix_sigmoid, linear_update
 
 
 class Agent():
@@ -27,10 +28,11 @@ class Agent():
         world_pred: N length vector, giving estimated probability (to 3 decimal places)
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
-    from utils.utility import sigmoid_update, chaotic_update, entropy, matrix_sigmoid
 
     def __init__(self, state_size=3, seed=None,  model_var=1, behav_initial_spread=1, pred_initial_spread=1, prediction='sigmoid', behavior='sigmoid', attention='static'):
         self.flag = True
+        if seed:
+            np.random.seed(seed)
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -39,13 +41,13 @@ class Agent():
         # High values create a bimodal distribution of initial behavioral priors.
         self.behav_initial_spread = behav_initial_spread
         assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
-        self.b_priors = self.matrix_sigmoid(
+        self.b_priors = matrix_sigmoid(
             (self.b_priors)*self.behav_initial_spread)
         self.world_pred = np.random.normal(0, 1, self.state_size)
         # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
         self.pred_initial_spread = pred_initial_spread
         assert pred_initial_spread >= 0, "pred_initial_spread must be >= 0"
-        self.world_pred = self.matrix_sigmoid(
+        self.world_pred = matrix_sigmoid(
             (self.world_pred)*self.pred_initial_spread)
         self.world = []  # history of world states
         # for recordin the most recent behavior
@@ -74,7 +76,7 @@ class Agent():
         Create new random behavior, initialized as the first behavioral prior was.
         '''
         self.b_priors = np.random.normal(0, 1, self.state_size)
-        self.b_priors = self.matrix_sigmoid(
+        self.b_priors = matrix_sigmoid(
             (2*self.b_priors-1)*self.behav_initial_spread)
 
     def make_behavior(self):
@@ -130,10 +132,12 @@ class Agent():
         if self.behav_func == 'static':
             pass
         elif self.behav_func == 'chaos':
-            self.b_priors = self.chaotic_update(
+            self.b_priors = chaotic_update(
                 self.b_priors, 0.2, avg_abs_error)
+        elif self.behav_func == 'linear':
+            self.b_priors = linear_update(self.b_priors, updated_dif)
         elif self.behav_func == 'sigmoid':
-            self.b_priors = self.sigmoid_update(
+            self.b_priors = sigmoid_update(
                 center=self.b_priors, error=updated_dif)
         else:
             raise ValueError("Behavioral update parameter invalid")
@@ -144,10 +148,13 @@ class Agent():
         if self.pred_func == 'static':
             pass
         elif self.pred_func == 'chaos':
-            self.world_pred = self.chaotic_update(
+            self.world_pred = chaotic_update(
                 self.world_pred, 0.2, avg_abs_error)
+        elif self.behav_func == 'linear':
+            self.world_pred = linear_update(
+                self.world_pred, attn_weighted_dif)
         elif self.pred_func == 'sigmoid':
-            self.world_pred = self.sigmoid_update(
+            self.world_pred = sigmoid_update(
                 center=self.world_pred, error=attn_weighted_dif)
         else:
             raise ValueError("Prediction update parameter invalid")
@@ -158,7 +165,7 @@ class Agent():
         if self.attn_func == 'static':
             pass
         elif self.attn_func == 'entropy':
-            self.attn = self.entropy(prob=self.world_pred)
+            self.attn = entropy(prob=self.world_pred)
         else:
             raise ValueError("Attention update parameter invalid")
 
@@ -182,17 +189,11 @@ class Agent():
         avg_attn_dif = np.sum(abs(attn_weighted_dif))/len(attn_weighted_dif)
         return avg_attn_dif
 
+    def get_behav_model(self):
+        return self.behav_model
+
     def get_type(self):
         '''
         Get the agent type.
         '''
         return f"p: {self.pred_func}, b: {self.behav_func}, a: {self.attn_func}"
-
-
-"""
-def matrix_sigmoid(x):
-    '''
-    Helper sigmoid function where the intercept is 0.5
-    '''
-    return 1 / (1 + np.exp(-x))
-"""

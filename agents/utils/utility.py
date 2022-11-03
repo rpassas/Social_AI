@@ -19,9 +19,9 @@ def chaotic_update(prob, threshold, error):
     return prob
 
 
-def linear_update(prev, error):
-    prob = error + prev
-    for i in range(len(prob)):
+def linear_update(prev, error, slope):
+    prob = slope * error + prev
+    for i in range(len(prev)):
         if prob[i] > 1:
             prob[i] = 1
         if prob[i] < 0:
@@ -40,9 +40,9 @@ def dynamic_sigmoid(i, x):
     '''
     y = np.exp(np.clip(-x, -100, 100))  # avoid runover into infinity.
     out = np.asarray([1 /
-     (1 + (
-         (1 - np.clip(i[j], 1e-50, 1-1e-50)) / np.clip(i[j], 1e-50, 1-1e-50)) * y[j])
-                      
+                      (1 + (
+                          (1 - np.clip(i[j], 1e-50, 1-1e-50)) / np.clip(i[j], 1e-50, 1-1e-50)) * y[j])
+
                       for j in range(len(i))])  # changed clips to keep sigmoid function from getting stuck at 0 or 1
     return out
 

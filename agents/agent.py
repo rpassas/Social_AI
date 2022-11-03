@@ -7,29 +7,46 @@ from agents.utils.utility import sigmoid_update, chaotic_update, entropy, matrix
 
 class Agent():
     """
-    This agent has an internal model, consisting of a covariance matrix from which it can draw from
-    to output behavior and adjust based on errors. An additional matrix determines attention to particular
-    features within a given state.
+    The agent class has 
 
-    INPUTS:
+    Args:
         state_size [integer, default=3]: sets size of behavior feature space, N.
         predictions need a large adjustment
-        model_var [number, default = 1.]: sets the slope at intercept of the behavior change sigmoid function.
+        model_var [float, default = 1.]: sets the slope at intercept of the behavior change sigmoid function.
             When set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting.
-        behav_initial_spread [number, default = 1.]: multiplier applied within sigmoid to initial behavioral_priors.
+        behav_initial_spread [float, default = 1.]: multiplier applied within sigmoid to initial behavioral_priors.
             High values create a bimodial distribution. Zero gives 0.5 for all initial behavioral_priors.
-        pred_initial_spread [number, default = 1.]: multiplier applied within sigmoid to initial predictions.
+        pred_initial_spread [float, default = 1.]: multiplier applied within sigmoid to initial predictions.
                 High values create a bimodial distribution. Zero gives 0.5 for all initial predictions.
 
-    VARIABLES:
+    Attributes:
         b_priors: N length vector, giving probability (to 3 decimal places) of
             agent DISPLAYING features of behavior on trial t.
         behavior: N length vector, indicating presence/absence (1/0) of agent's features of behavior trial t.
         world_pred: N length vector, giving estimated probability (to 3 decimal places)
             of observing features of behavior FROM THE OTHER AGENT on trial t.
+
+    Methods:
+        new_behavior(): 
+        make_behavior(): 
+        get_predictabillity(): 
+        make_prediction(): 
+        new_behavior(): 
+        get_world(world):
+        get_behav_priors():
+        behavior_prediction_error():
+        learn_conform():
+        learn_predict_world():
+        update_attention():
+        get_cost():
+        get_attention():
+        get_costs():
+        get_avg_costs():
+        get_behav_model():
+        get_type():
     """
 
-    def __init__(self, state_size=3, seed=None,  model_var=1, behav_initial_spread=1, pred_initial_spread=1, prediction='sigmoid', behavior='sigmoid', attention='static'):
+    def __init__(self, state_size=3, seed=None,  model_var=1, behav_initial_spread=1, pred_initial_spread=1, pred_a=0, prediction='sigmoid', behavior='sigmoid', attention='static'):
         self.flag = True
         if seed:
             np.random.seed(seed)
@@ -53,8 +70,12 @@ class Agent():
         # for recordin the most recent behavior
         self.current_behavior = []
         assert model_var >= 0, "model variance must be at least 0"
-        # behavioral model applies some randomness or "personality" to how behavior gets adjusted
+        # pred_a is the learning rate for adjusting the agent's prediction or reference signal
+        assert pred_a >= 0, "model variance must be at least 0"
+        assert pred_a <= 1, "model variance must be at most 1"
+        self.pred_a = pred_a
         self.model_var = model_var
+        # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         self.behav_model = np.random.uniform(0, 1, self.state_size)
         self.model_estimate = np.random.uniform(0, 1, self.state_size)
         # self.behav_model = normalize(
@@ -152,10 +173,10 @@ class Agent():
                 self.world_pred, 0.2, avg_abs_error)
         elif self.behav_func == 'linear':
             self.world_pred = linear_update(
-                self.world_pred, attn_weighted_dif)
+                self.world_pred, attn_weighted_dif, self.pred_a)
         elif self.pred_func == 'sigmoid':
             self.world_pred = sigmoid_update(
-                center=self.world_pred, error=attn_weighted_dif)
+                center=self.world_pred, error=self.pred_a*attn_weighted_dif)
         else:
             raise ValueError("Prediction update parameter invalid")
 

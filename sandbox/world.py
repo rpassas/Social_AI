@@ -38,7 +38,7 @@ class World():
 
     def __init__(self, state_size=3, time=100, agent=["model_alt", "model_alt"],
                  seed=None, model_var=[1, 1], behav_initial_spread=[1, 1],
-                 pred_initial_spread=[1, 1], pred_a=[0, 0], change_points=[[None], [None]], agent_n=2,
+                 pred_initial_spread=[1, 1], pred_a=[0, 0], behav_a=[0, 0], change_points=[[None], [None]], agent_n=2,
                  prediction=["sigmoid", "sigmoid"], behavior=["sigmoid", "sigmoid"], attention=["static", "static"]):
         if seed:
             np.random.seed(seed)
@@ -60,10 +60,15 @@ class World():
         # for i in behav_control:
         #    assert type(i) == int, 'behav_control entries must be integers'
         self.pred_a = []
-        for i in pred_a:
-            assert pred_a[i] >= 0, "model variance must be at least 0"
-            assert pred_a[i] <= 1, "model variance must be at most 1"
-            self.pred_a.append(pred_a[i])
+        for a in pred_a:
+            assert a >= 0, "model variance must be at least 0"
+            assert a <= 1, "model variance must be at most 1"
+            self.pred_a.append(a)
+        self.behav_a = []
+        for a in behav_a:
+            assert a >= 0, "model variance must be at least 0"
+            assert a <= 1, "model variance must be at most 1"
+            self.behav_a.append(a)
         self.behav_control = [0, 0]  # behavioral control of the agents
         for i in model_var:
             # these do not need to be integers
@@ -83,6 +88,7 @@ class World():
         self.attention = attention
         # variables to be filled as the experiment runs
         self.agents = []
+        print(self.behav_a)
         '''
         self.b_priors = np.empty((self.agent_n, self.state_size))
         self.behaviors = np.empty((self.agent_n, self.state_size))
@@ -111,9 +117,10 @@ class World():
                     state_size=self.state_size, memory=float(self.memory[n-1]),
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "base":
-                self.agents.append(Agent(state_size=self.state_size,
-                                         model_var=self.model_var[n -
-                                                                  1], pred_a=self.pred_a[n-1], prediction=self.prediction[n-1],
+                self.agents.append(Agent(state_size=self.state_size, model_var=self.model_var[n-1],
+                                         pred_a=self.pred_a[n -
+                                                            1], behav_a=self.behav_a[n-1],
+                                         prediction=self.prediction[n-1],
                                          behavior=self.behavior[n-1], attention=self.attention[n-1]))
             elif self.type[n-1] == "bayes":
                 self.agents.append(Agent_Bayes(

@@ -13,7 +13,7 @@ class Agent():
         state_size [integer, default=3]: sets size of behavior feature space, N.
         predictions need a large adjustment
         model_var [float, default = 1.]: sets the slope at intercept of the behavior change sigmoid function.
-            When set to 0, the model is a matrix of zeroes, meaning behavior does not change from its initial setting.
+            When set to 0, the model is a matrix of zeros, meaning behavior does not change from its initial setting.
         behav_initial_spread [float, default = 1.]: multiplier applied within sigmoid to initial behavioral_priors.
             High values create a bimodial distribution. Zero gives 0.5 for all initial behavioral_priors.
         pred_initial_spread [float, default = 1.]: multiplier applied within sigmoid to initial predictions.
@@ -46,7 +46,7 @@ class Agent():
         get_type():
     """
 
-    def __init__(self, state_size=3, seed=None,  model_var=1, behav_initial_spread=1, pred_initial_spread=1, pred_a=0, prediction='sigmoid', behavior='sigmoid', attention='static'):
+    def __init__(self, state_size=3, seed=None,  model_var=1, behav_initial_spread=1, pred_initial_spread=1, pred_a=0, behav_a=0, prediction='sigmoid', behavior='sigmoid', attention='static'):
         self.flag = True
         if seed:
             np.random.seed(seed)
@@ -69,15 +69,29 @@ class Agent():
         self.world = []  # history of world states
         # for recordin the most recent behavior
         self.current_behavior = []
+        self.past_behavior = []
         assert model_var >= 0, "model variance must be at least 0"
         # pred_a is the learning rate for adjusting the agent's prediction or reference signal
         assert pred_a >= 0, "model variance must be at least 0"
         assert pred_a <= 1, "model variance must be at most 1"
         self.pred_a = pred_a
+        # behav_a is the learning rate for adjusting the agent's beahvioral model
+        assert behav_a >= 0, "model variance must be at least 0"
+        assert behav_a <= 1, "model variance must be at most 1"
+        self.behav_a = behav_a
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        self.behav_model = np.random.uniform(0, 1, self.state_size)
-        self.model_estimate = np.random.uniform(0, 1, self.state_size)
+        #self.behav_model = np.random.uniform(0, 1, self.state_size)
+        self.behav_model = np.random.rand(self.state_size, 2)
+        # seeks to estimate the behav_model and prior of others
+        self.model_estimate = np.ones((self.state_size, 2))
+        x_vals = np.array([-0.5, 0, 0.5])
+        dim_0 = np.ones(x_vals.shape[0])
+        x = np.c_[dim_0, x_vals]
+        self.x = np.tile(x, (self.state_size, 1, 1))
+        self.b_count = np.zeros((state_size, 3))
+        self.obs_sum = np.zeros((state_size, 3))
+        self.y = np.zeros((state_size, 3))
         # self.behav_model = normalize(
         #    2*np.random.rand(state_size, state_size)-1, axis=1, norm='l2')*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
@@ -104,6 +118,7 @@ class Agent():
         '''
         Generate actual behavior (list of 0/1) from priors
         '''
+        self.past_behavior = self.current_behavior
         self.current_behavior = np.random.binomial(1, self.b_priors)
         return self.current_behavior
 
@@ -125,6 +140,20 @@ class Agent():
         '''
         For adding current world state (i.e. other agent's behavior) to the history
         '''
+        for b in range(len(self.past_behavior)):
+            if self.past_behavior[b] == 0:
+                self.obs_sum[b][0] += world[b]
+                self.b_count[b][0] += 1
+            elif self.past_behavior[b] == 1:
+                self.obs_sum[b][2] += world[b]
+                self.b_count[b][2] += 1
+            self.b_count[b][1] += 1
+            self.obs_sum[b][1] += world[b]
+        if len(self.past_behavior) == 0:
+            for s in range(self.state_size):
+                self.b_count[s][1] += 1
+                self.obs_sum[s][1] = world[s]
+
         self.world.append(world)
 
     def get_behav_priors(self):
@@ -149,7 +178,9 @@ class Agent():
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
         #updated_dif = self.behav_model @ attn_weighted_dif
-        updated_dif = self.behav_model * attn_weighted_dif
+        if len(self.past_behavior) > 0:
+            self.update_behav_model()
+        updated_dif = self.behav_model.T[1] * attn_weighted_dif
         if self.behav_func == 'static':
             pass
         elif self.behav_func == 'chaos':
@@ -166,6 +197,7 @@ class Agent():
     def learn_predict_world(self):
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
+        updated_dif = self.model_estimate.T[1] * attn_weighted_dif
         if self.pred_func == 'static':
             pass
         elif self.pred_func == 'chaos':
@@ -176,11 +208,22 @@ class Agent():
                 self.world_pred, attn_weighted_dif, self.pred_a)
         elif self.pred_func == 'sigmoid':
             self.world_pred = sigmoid_update(
-                center=self.world_pred, error=self.pred_a*attn_weighted_dif)
+                center=self.world_pred, error=self.pred_a*updated_dif)
         else:
             raise ValueError("Prediction update parameter invalid")
 
-    # def learn_model(self):
+    # def update_model(self):
+
+    def update_behav_model(self):
+        for s in range(self.state_size):
+            self.y[s][0] = self.obs_sum[s][0] / max(self.b_count[s][0], 0.001)
+            self.y[s][1] = self.obs_sum[s][1]/self.b_count[s][1]
+            self.y[s][2] = self.obs_sum[s][2] / max(self.b_count[s][2], 0.001)
+        for m in range(len(self.behav_model)):
+            hypothesis = np.dot(self.x[m], self.behav_model[m])
+            loss = hypothesis - self.y[m]
+            grad = np.dot(self.x[m].T, loss) / self.x[m].shape[0]
+            self.behav_model[m] = self.behav_model[m] - grad*self.behav_a
 
     def update_attention(self):
         if self.attn_func == 'static':
@@ -217,4 +260,4 @@ class Agent():
         '''
         Get the agent type.
         '''
-        return f"p: {self.pred_func}, b: {self.behav_func}, attn: {self.attn_func}, pred a: {self.pred_a} "
+        return f"p: {self.pred_func}, b: {self.behav_func}, attn: {self.attn_func}, pred a: {self.pred_a}, behav a: {self.behav_a} "

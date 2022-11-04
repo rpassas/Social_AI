@@ -102,6 +102,7 @@ class World():
         self.avg_predictability = [[] for a in range(self.agent_n)]
         self.costs = [[] for a in range(self.agent_n)]
         self.avg_abs_error = [[] for a in range(self.agent_n)]
+        self.tru_dif = [[] for a in range(self.agent_n)]
 
     def create_agents(self):
         '''
@@ -289,6 +290,15 @@ class World():
         0 = unpredictable (0.5)
         '''
         return self.costs
+
+    def get_tru_dif(self):
+        '''
+        '''
+        for t in range(self.time):
+            self.tru_dif[0].append(
+                sum(abs(self.b_priors[1][t]-self.predictions[0][t]))/self.state_size)
+            self.tru_dif[1].append(sum(abs(self.b_priors[0][t]-self.predictions[1][t]))/self.state_size)
+        return self.tru_dif
 
     def print_results(self):
         '''

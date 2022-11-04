@@ -1,14 +1,14 @@
-from agent_of_chaos import Agent_of_Chaos
+from .agents.agent_of_chaos import Agent_of_Chaos
 #from old_versions.agent_average_behavior import Agent_Average
-from agent_average_prediction import Agent_Average_Prediction
-from agent_dummy import Agent_Dummy
+from .agents.agent_average_prediction import Agent_Average_Prediction
+from .agents.agent_dummy import Agent_Dummy
 #from old_versions.agent_with_model import Agent_with_Model
-from agent_with_sigmoid_model import Agent_with_Sigmoid_Model
+from .agents.agent_with_sigmoid_model import Agent_with_Sigmoid_Model
 #from old_versions.agent_with_linear_model import Agent_with_Linear_Model
-from agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
-from agent_bayes import Agent_Bayes
-from agent_semi_bayes import Agent_Semi_Bayes
-from agent import Agent
+from .agents.agent_with_alt_sigmoid_model import Agent_with_Alt_Sigmoid_Model
+from .agents.agent_bayes import Agent_Bayes
+from .agents.agent_semi_bayes import Agent_Semi_Bayes
+from .agents.agent import Agent
 import numpy as np
 import argparse
 
@@ -38,7 +38,7 @@ class World():
 
     def __init__(self, state_size=3, time=100, agent=["model_alt", "model_alt"],
                  seed=None, model_var=[1, 1], behav_initial_spread=[1, 1],
-                 pred_initial_spread=[1, 1], change_points=[[None], [None]], agent_n=2,
+                 pred_initial_spread=[1, 1], pred_a=[0, 0], change_points=[[None], [None]], agent_n=2,
                  prediction=["sigmoid", "sigmoid"], behavior=["sigmoid", "sigmoid"], attention=["static", "static"]):
         if seed:
             np.random.seed(seed)
@@ -59,6 +59,11 @@ class World():
         #    behav_control) == self.agent_n, 'behav_control must be a list, with as many entries as agent_n'
         # for i in behav_control:
         #    assert type(i) == int, 'behav_control entries must be integers'
+        self.pred_a = []
+        for i in pred_a:
+            assert pred_a[i] >= 0, "model variance must be at least 0"
+            assert pred_a[i] <= 1, "model variance must be at most 1"
+            self.pred_a.append(pred_a[i])
         self.behav_control = [0, 0]  # behavioral control of the agents
         for i in model_var:
             # these do not need to be integers
@@ -108,7 +113,7 @@ class World():
             elif self.type[n-1] == "base":
                 self.agents.append(Agent(state_size=self.state_size,
                                          model_var=self.model_var[n -
-                                                                  1], prediction=self.prediction[n-1],
+                                                                  1], pred_a=self.pred_a[n-1], prediction=self.prediction[n-1],
                                          behavior=self.behavior[n-1], attention=self.attention[n-1]))
             elif self.type[n-1] == "bayes":
                 self.agents.append(Agent_Bayes(

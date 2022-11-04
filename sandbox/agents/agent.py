@@ -2,7 +2,7 @@ import numpy as np
 #from utility import matrix_sigmoid
 import scipy.stats as stats
 from sklearn.preprocessing import normalize
-from agents.utils.utility import sigmoid_update, chaotic_update, entropy, matrix_sigmoid, linear_update
+from sandbox.utils.utility import sigmoid_update, chaotic_update, entropy, matrix_sigmoid, linear_update
 
 
 class Agent():
@@ -217,4 +217,4 @@ class Agent():
         '''
         Get the agent type.
         '''
-        return f"p: {self.pred_func}, b: {self.behav_func}, a: {self.attn_func}"
+        return f"p: {self.pred_func}, b: {self.behav_func}, attn: {self.attn_func}, pred a: {self.pred_a} "

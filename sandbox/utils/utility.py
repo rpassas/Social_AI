@@ -19,9 +19,9 @@ def chaotic_update(prob, threshold, error):
     return prob
 
 
-def linear_update(prev, error, slope):
-    prob = slope * error + prev
-    for i in range(len(prev)):
+def linear_update(prev, error):
+    prob = error + prev
+    for i in range(len(prob)):
         if prob[i] > 1:
             prob[i] = 1
         if prob[i] < 0:

@@ -88,7 +88,6 @@ class World():
         self.attention = attention
         # variables to be filled as the experiment runs
         self.agents = []
-        print(self.behav_a)
         '''
         self.b_priors = np.empty((self.agent_n, self.state_size))
         self.behaviors = np.empty((self.agent_n, self.state_size))

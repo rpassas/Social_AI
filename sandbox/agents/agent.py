@@ -180,14 +180,15 @@ class Agent():
         #updated_dif = self.behav_model @ attn_weighted_dif
         if len(self.past_behavior) > 0:
             self.update_behav_model()
-        updated_dif = self.behav_model.T[1] * attn_weighted_dif
+        updated_dif = (self.behav_model.T[1]*-1) * attn_weighted_dif
         if self.behav_func == 'static':
             pass
         elif self.behav_func == 'chaos':
             self.b_priors = chaotic_update(
                 self.b_priors, 0.2, avg_abs_error)
         elif self.behav_func == 'linear':
-            self.b_priors = linear_update(self.b_priors, updated_dif)
+            self.b_priors = linear_update(
+                self.b_priors, updated_dif)
         elif self.behav_func == 'sigmoid':
             self.b_priors = sigmoid_update(
                 center=self.b_priors, error=updated_dif)
@@ -197,7 +198,8 @@ class Agent():
     def learn_predict_world(self):
         dif, avg_abs_error = self.behavior_prediction_error()
         attn_weighted_dif = self.attn @ dif
-        updated_dif = self.model_estimate.T[1] * attn_weighted_dif
+        updated_dif = self.pred_a * \
+            self.model_estimate.T[1] * attn_weighted_dif
         if self.pred_func == 'static':
             pass
         elif self.pred_func == 'chaos':
@@ -205,10 +207,10 @@ class Agent():
                 self.world_pred, 0.2, avg_abs_error)
         elif self.behav_func == 'linear':
             self.world_pred = linear_update(
-                self.world_pred, attn_weighted_dif, self.pred_a)
+                self.world_pred, attn_weighted_dif)
         elif self.pred_func == 'sigmoid':
             self.world_pred = sigmoid_update(
-                center=self.world_pred, error=self.pred_a*updated_dif)
+                center=self.world_pred, error=updated_dif)
         else:
             raise ValueError("Prediction update parameter invalid")
 

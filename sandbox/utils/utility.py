@@ -1,6 +1,7 @@
 import numpy as np
 import math
-
+import random
+import scipy
 
 def matrix_sigmoid(x):
     '''
@@ -55,3 +56,34 @@ def entropy(prob):
          for p in prob]
     attention = np.diag(e)
     return attention
+
+
+def eigen_components(a=None):
+    if not a:
+        a = random.uniform(-0.99, 0.99)
+    if a > 1 or a < -1:
+        raise ValueError("a must be between -0.99 and 0.99")
+    a2 = a**2
+    b = math.sqrt(1-a2)
+    # if you want a complex output
+    #eig1 = complex(a, -b)
+    #eig2 = complex(a, b)
+    return a, b
+
+
+def get_orbit_matrix(model_var=None, basis_mat=None):
+    a, b = eigen_components(model_var)
+    if basis_mat == None:
+        basis_mat = np.random.rand(2, 2)
+    if len(basis_mat) != 2 or len(basis_mat[0]) != 2:
+        raise ValueError("basis matrix must have shape (2,2)")
+    A = np.array([[a, -b],
+              [b, a]])
+    basis_mat_i = np.linalg.inv(basis_mat)
+    M = basis_mat_i@A@basis_mat
+    return M.real
+
+def dynamic_transition(prior, M, error):
+    prior_t = scipy.linalg.fractional_matrix_power(M, error).real@prior
+    return prior_t
+    

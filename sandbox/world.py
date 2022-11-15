@@ -273,6 +273,12 @@ class World():
         #prior_T = prior_array.T
         return self.b_priors
 
+    def get_behaviors(self):
+        '''
+        Get all the behaviors of the expierment.
+        '''
+        return self.behaviors
+
     def get_predictability(self):
         '''
         Get the average predictability score of the priors of each agent:
@@ -297,7 +303,8 @@ class World():
         for t in range(self.time):
             self.tru_dif[0].append(
                 sum(abs(self.b_priors[1][t]-self.predictions[0][t]))/self.state_size)
-            self.tru_dif[1].append(sum(abs(self.b_priors[0][t]-self.predictions[1][t]))/self.state_size)
+            self.tru_dif[1].append(
+                sum(abs(self.b_priors[0][t]-self.predictions[1][t]))/self.state_size)
         return self.tru_dif
 
     def print_results(self):

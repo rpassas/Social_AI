@@ -2,7 +2,8 @@ import numpy as np
 #from utility import matrix_sigmoid
 import scipy.stats as stats
 from sklearn.preprocessing import normalize
-from sandbox.utils.utility import sigmoid_update, chaotic_update, entropy, matrix_sigmoid, linear_update
+from sandbox.utils.utility import sigmoid_update, chaotic_update, entropy, matrix_sigmoid, \
+    linear_update, get_orbit_matrix, dynamic_transition
 
 
 class Agent():
@@ -46,7 +47,7 @@ class Agent():
         get_type():
     """
 
-    def __init__(self, state_size=3, seed=None,  model_var=1, behav_initial_spread=1, pred_initial_spread=1, pred_a=0, behav_a=0, prediction='sigmoid', behavior='sigmoid', attention='static'):
+    def __init__(self, state_size=3, seed=None, behav_initial_spread=1, pred_initial_spread=1, pred_a=0, behav_a=0, model_var=None, basis_mat=None, prediction='sigmoid', behavior='sigmoid', attention='static'):
         self.flag = True
         if seed:
             np.random.seed(seed)
@@ -70,7 +71,6 @@ class Agent():
         # for recordin the most recent behavior
         self.current_behavior = []
         self.past_behavior = []
-        assert model_var >= 0, "model variance must be at least 0"
         # pred_a is the learning rate for adjusting the agent's prediction or reference signal
         assert pred_a >= 0, "model variance must be at least 0"
         assert pred_a <= 1, "model variance must be at most 1"
@@ -79,10 +79,15 @@ class Agent():
         assert behav_a >= 0, "model variance must be at least 0"
         assert behav_a <= 1, "model variance must be at most 1"
         self.behav_a = behav_a
+        assert model_var > 0, "model variance must be greater than 0"
+        assert model_var < 1, "model variance must be less than 1"
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
-        #self.behav_model = np.random.uniform(0, 1, self.state_size)
-        self.behav_model = np.random.rand(self.state_size, 2)
+        if behavior == "orbit":
+            self.behav_model = get_orbit_matrix(self.model_var, basis_mat)
+        else:
+            #self.behav_model = np.random.uniform(0, 1, self.state_size)
+            self.behav_model = np.random.rand(self.state_size, 2)
         # seeks to estimate the behav_model and prior of others
         self.model_estimate = np.ones((self.state_size, 2))
         x_vals = np.array([-0.5, 0, 0.5])
@@ -118,8 +123,12 @@ class Agent():
         '''
         Generate actual behavior (list of 0/1) from priors
         '''
-        self.past_behavior = self.current_behavior
-        self.current_behavior = np.random.binomial(1, self.b_priors)
+        if self.behav_func == 'orbit':
+            self.past_behavior = self.current_behavior
+            self.current_behavior = matrix_sigmoid(self.b_priors)
+        else:
+            self.past_behavior = self.current_behavior
+            self.current_behavior = np.random.binomial(1, self.b_priors)
         return self.current_behavior
 
     def get_predictability(self):
@@ -192,6 +201,9 @@ class Agent():
         elif self.behav_func == 'sigmoid':
             self.b_priors = sigmoid_update(
                 center=self.b_priors, error=updated_dif)
+        elif self.behav_func == 'orbit':
+            self.b_priors = dynamic_transition(
+                self.b_priors, self.behav_model, avg_abs_error)
         else:
             raise ValueError("Behavioral update parameter invalid")
 

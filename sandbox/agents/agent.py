@@ -47,7 +47,7 @@ class Agent():
         get_type():
     """
 
-    def __init__(self, state_size=3, seed=None, behav_initial_spread=1, pred_initial_spread=1, pred_a=0, behav_a=0, model_var=None, basis_mat=None, prediction='sigmoid', behavior='sigmoid', attention='static'):
+    def __init__(self, state_size=3, seed=None, behav_initial_spread=1, pred_initial_spread=1, pred_a=1, behav_a=1, model_var=None, basis_mat=None, prediction='sigmoid', behavior='sigmoid', attention='static'):
         self.flag = True
         if seed:
             np.random.seed(seed)
@@ -203,7 +203,7 @@ class Agent():
                 center=self.b_priors, error=updated_dif)
         elif self.behav_func == 'orbit':
             self.b_priors = dynamic_transition(
-                self.b_priors, self.behav_model, avg_abs_error)
+                self.b_priors, self.behav_model, avg_abs_error*self.behav_a)
         else:
             raise ValueError("Behavioral update parameter invalid")
 
@@ -229,15 +229,18 @@ class Agent():
     # def update_model(self):
 
     def update_behav_model(self):
-        for s in range(self.state_size):
-            self.y[s][0] = self.obs_sum[s][0] / max(self.b_count[s][0], 0.001)
-            self.y[s][1] = self.obs_sum[s][1]/self.b_count[s][1]
-            self.y[s][2] = self.obs_sum[s][2] / max(self.b_count[s][2], 0.001)
-        for m in range(len(self.behav_model)):
-            hypothesis = np.dot(self.x[m], self.behav_model[m])
-            loss = hypothesis - self.y[m]
-            grad = np.dot(self.x[m].T, loss) / self.x[m].shape[0]
-            self.behav_model[m] = self.behav_model[m] - grad*self.behav_a
+        if self.behav_func == "orbit":
+            pass
+        else:
+            for s in range(self.state_size):
+                self.y[s][0] = self.obs_sum[s][0] / max(self.b_count[s][0], 0.001)
+                self.y[s][1] = self.obs_sum[s][1]/self.b_count[s][1]
+                self.y[s][2] = self.obs_sum[s][2] / max(self.b_count[s][2], 0.001)
+            for m in range(len(self.behav_model)):
+                hypothesis = np.dot(self.x[m], self.behav_model[m])
+                loss = hypothesis - self.y[m]
+                grad = np.dot(self.x[m].T, loss) / self.x[m].shape[0]
+                self.behav_model[m] = self.behav_model[m] - grad*self.behav_a
 
     def update_attention(self):
         if self.attn_func == 'static':

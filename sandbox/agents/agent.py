@@ -171,20 +171,20 @@ class Agent():
         '''
         return self.b_priors
 
-    def behavior_prediction_error(self):
+    def behavior_prediction_error(self, theta):
         '''
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
         if len(self.world[-1]) != len(self.world_pred):
             raise ValueError("state sizes between agents must match")
-        dif = self.world[-1] - \
-            self.world_pred  # array of differences, for each behavioral feature
+        dif = (self.world[-1] -
+               self.world_pred) * theta  # array of differences, for each behavioral feature
         avg_abs_error = np.sum(abs(dif))/len(dif)
         return dif, avg_abs_error
 
     def learn_conform(self):
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(self.behav_a)
         attn_weighted_dif = self.attn @ dif
         #updated_dif = self.behav_model @ attn_weighted_dif
         if len(self.past_behavior) > 0:
@@ -203,12 +203,12 @@ class Agent():
                 center=self.b_priors, error=updated_dif)
         elif self.behav_func == 'orbit':
             self.b_priors = dynamic_transition(
-                self.b_priors, self.behav_model, avg_abs_error*self.behav_a)
+                self.b_priors, self.behav_model, avg_abs_error)
         else:
             raise ValueError("Behavioral update parameter invalid")
 
     def learn_predict_world(self):
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(self.pred_a)
         attn_weighted_dif = self.attn @ dif
         updated_dif = self.pred_a * \
             self.model_estimate.T[1] * attn_weighted_dif
@@ -233,9 +233,11 @@ class Agent():
             pass
         else:
             for s in range(self.state_size):
-                self.y[s][0] = self.obs_sum[s][0] / max(self.b_count[s][0], 0.001)
+                self.y[s][0] = self.obs_sum[s][0] / \
+                    max(self.b_count[s][0], 0.001)
                 self.y[s][1] = self.obs_sum[s][1]/self.b_count[s][1]
-                self.y[s][2] = self.obs_sum[s][2] / max(self.b_count[s][2], 0.001)
+                self.y[s][2] = self.obs_sum[s][2] / \
+                    max(self.b_count[s][2], 0.001)
             for m in range(len(self.behav_model)):
                 hypothesis = np.dot(self.x[m], self.behav_model[m])
                 loss = hypothesis - self.y[m]
@@ -260,12 +262,12 @@ class Agent():
         return self.attn
 
     def get_costs(self):
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(1)
         attn_weighted_dif = self.attn @ dif
         return attn_weighted_dif
 
     def get_avg_costs(self):
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(1)
         attn_weighted_dif = self.attn @ dif
         avg_attn_dif = np.sum(abs(attn_weighted_dif))/len(attn_weighted_dif)
         return avg_attn_dif

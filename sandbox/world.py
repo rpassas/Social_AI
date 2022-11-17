@@ -220,7 +220,8 @@ class World():
                     # agent 1 gets agent 0's behavior
                     self.agents[i].get_world(self.behaviors[0][-1])
                 p = self.agents[i].make_prediction()
-                dif, avg_abs_error = self.agents[i].behavior_prediction_error()
+                dif, avg_abs_error = self.agents[i].behavior_prediction_error(
+                    1)
                 c = self.agents[i].get_avg_costs()
                 self.agents[i].learn_conform()
                 self.agents[i].learn_predict_world()

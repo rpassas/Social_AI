@@ -31,7 +31,7 @@ class Agent_with_Alt_Sigmoid_Model():
             of observing features of behavior FROM THE OTHER AGENT on trial t.
     """
 
-    def __init__(self, state_size=3, seed=None, memory=0, behav_control=0, model_var=1., behav_initial_spread=1., pred_initial_spread=1., inference_fn='IRL',  action_cost_fn='linear'):
+    def __init__(self, state_size=3, seed=None, memory=1, behav_control=1, model_var=1., behav_initial_spread=1., pred_initial_spread=1., inference_fn='IRL',  action_cost_fn='linear'):
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
         # generates a new instance of a behavioral prior.
@@ -60,13 +60,18 @@ class Agent_with_Alt_Sigmoid_Model():
         assert model_var >= 0, "model variance must be at least 0"
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         self.model_var = model_var
+
+        self.behav_model = np.random.rand(1, self.state_size)[0]
+
         self.behav_model = normalize(
             2*np.random.rand(state_size, state_size)-1, axis=1, norm='l2')*self.model_var
         # model_thresh creates distributions where some input changes behavior drastically, while others have small effects.
         # TODO - parameterize this. It's a neat idea, but I don't know how it works yet.
-        # self.model_thresh = .95
-        # self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10
-        # self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1
+        #self.model_thresh = .95
+        # self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(
+        #    self.behav_model) > self.model_thresh]*10
+        # self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(
+        #    self.behav_model) <= self.model_thresh]*.1
 
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.a_c_fn = action_cost_fn  # action cost function
@@ -114,15 +119,15 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         return self.b_priors
 
-    def behavior_prediction_error(self):
+    def behavior_prediction_error(self, theta):
         '''
         Given the current state of the world, how off was the agent's prediction? (i.e. how well do we predict the world?)
         Returns vector of +/- prediciton error, and average absolute prediction error
         '''
         if len(self.world[-1]) != len(self.world_pred):
             raise ValueError("state sizes between agents must match")
-        dif = self.world[-1] - \
-            self.world_pred  # array of differences, for each behavioral feature
+        dif = (self.world[-1] -
+               self.world_pred)*theta  # array of differences, for each behavioral feature
         avg_abs_error = np.sum(abs(dif))/len(dif)
         return dif, avg_abs_error
 
@@ -130,9 +135,10 @@ class Agent_with_Alt_Sigmoid_Model():
         '''
         Adjust behavioral priors to match the world state based on conformity error
         '''
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(1)
         attn_weighted_dif = self.attn @ dif
-        updated_dif = self.behav_model @ attn_weighted_dif
+        updated_dif = np.array(self.behav_model) @ attn_weighted_dif
+        #updated_dif = self.behav_model @ dif
         self.b_priors = dynamic_sigmoid(self.past_priors[-1], updated_dif)
         '''
         mem = int(min(self.behav_control, len(self.past_priors)))
@@ -158,10 +164,11 @@ class Agent_with_Alt_Sigmoid_Model():
         Adjust prediction of world states based on prediction error.
         Uses alternative weighted average to get vector of errors.
         '''
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(1)
         attn_weighted_dif = self.attn @ dif
         self.world_pred = dynamic_sigmoid(
             self.past_predictions[-1], attn_weighted_dif)
+
         '''
         mem = int(min(self.memory, len(self.past_predictions)))
         if mem == 0:
@@ -209,12 +216,12 @@ class Agent_with_Alt_Sigmoid_Model():
         return self.attn
 
     def get_costs(self):
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(1)
         attn_weighted_dif = self.attn @ dif
         return attn_weighted_dif
 
     def get_avg_costs(self):
-        dif, avg_abs_error = self.behavior_prediction_error()
+        dif, avg_abs_error = self.behavior_prediction_error(1)
         attn_weighted_dif = self.attn @ dif
         avg_attn_dif = np.sum(abs(attn_weighted_dif))/len(attn_weighted_dif)
         return avg_attn_dif

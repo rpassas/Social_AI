@@ -36,8 +36,8 @@ class World():
         agent_n [integer, default=2]: sets number of agents. Currently only set-up to handle 2.
     """
 
-    def __init__(self, state_size=3, time=100, agent=["model_alt", "model_alt"],
-                 seed=None, model_var=[1, 1], behav_initial_spread=[1, 1],
+    def __init__(self, state_size=3, time=100, agent=["base", "base"],
+                 seed=None, model_var=[[0, 1], [0, 1]], behav_initial_spread=[1, 1], init_priors=[], init_preds=[],
                  pred_initial_spread=[1, 1], pred_a=[0, 0], behav_a=[0, 0], change_points=[[None], [None]], agent_n=2,
                  prediction=["sigmoid", "sigmoid"], behavior=["sigmoid", "sigmoid"], attention=["static", "static"]):
         if seed:
@@ -45,6 +45,20 @@ class World():
         # argparse will make unfilled optional args 'None', so perform checks
         assert state_size > 0, "state_size must be > 0"  # behavior size
         self.state_size = state_size
+        if init_priors:
+            for p in init_priors:
+                assert len(
+                    p) == self.state_size, "state size and prior size must match"
+            self.init_priors = init_priors
+        else:
+            self.init_priors = [[], []]
+        if init_preds:
+            for p in init_preds:
+                assert len(
+                    p) == self.state_size, "state size and prediction size must match"
+            self.init_preds = init_preds
+        else:
+            self.init_preds = [[], []]
         assert time > 0, "time must be > 0"  # length of an experiment
         self.time = time
         assert agent_n >= 2, "agent_n must be >= 2"  # number of agents
@@ -70,9 +84,9 @@ class World():
             assert a <= 1, "model variance must be at most 1"
             self.behav_a.append(a)
         self.behav_control = [0, 0]  # behavioral control of the agents
-        for i in model_var:
-            # these do not need to be integers
-            assert i >= 0, "model variance must be >= 0"
+        # for bound in model_var:
+        #    for i in bound:
+        #        assert i >= 0, "model variance must be >= 0"
         for i in change_points:
             assert isinstance(
                 i, list), 'each entry in change_points must be a list of intergers'
@@ -100,6 +114,7 @@ class World():
         self.predictions = [[] for a in range(self.agent_n)]
         self.errors = [[] for a in range(self.agent_n)]
         self.avg_predictability = [[] for a in range(self.agent_n)]
+        self.concur = [[] for a in range(self.agent_n)]
         self.costs = [[] for a in range(self.agent_n)]
         self.avg_abs_error = [[] for a in range(self.agent_n)]
         self.tru_dif = [[] for a in range(self.agent_n)]
@@ -118,9 +133,10 @@ class World():
                     behav_control=float(self.behav_control[n-1]), model_var=self.model_var[n-1]))
             elif self.type[n-1] == "base":
                 self.agents.append(Agent(state_size=self.state_size, model_var=self.model_var[n-1],
-                                         pred_a=self.pred_a[n -
-                                                            1], behav_a=self.behav_a[n-1],
-                                         prediction=self.prediction[n-1],
+                                         init_preds=self.init_preds[n -
+                                                                    1], init_priors=self.init_priors[n-1],
+                                         pred_a=self.pred_a[n - 1], behav_a=self.behav_a[n -
+                                                                                         1], prediction=self.prediction[n-1],
                                          behavior=self.behavior[n-1], attention=self.attention[n-1]))
             elif self.type[n-1] == "bayes":
                 self.agents.append(Agent_Bayes(
@@ -233,6 +249,12 @@ class World():
                 self.avg_abs_error[i].append(avg_abs_error)
                 #print("COST:", self.avg_abs_error)
                 # print("\n")
+            for i in range(len(self.agents)-1):
+                for j in range(i+1, len(self.agents)):
+                    self.concur[i].append(1 - (
+                        abs(abs(self.avg_abs_error[i][-1]) - abs(self.avg_abs_error[j][-1]))))
+                    self.concur[j].append(1 - (
+                        abs(abs(self.avg_abs_error[i][-1]) - abs(self.avg_abs_error[j][-1]))))
             time_left -= 1
 
     def get_agents(self):
@@ -276,18 +298,27 @@ class World():
 
     def get_behaviors(self):
         '''
-        Get all the behaviors of the expierment.
+        Get all the behaviors of the experiment.
         '''
         return self.behaviors
 
     def get_predictability(self):
         '''
         Get the average predictability score of the priors of each agent:
-        1 = predictable (0 or 1)
+        1 = predictable (0 or 1 prior)
         ...
-        0 = unpredictable (0.5)
+        0 = unpredictable (0.5 prior)
         '''
         return self.avg_predictability
+
+    def get_concurrence(self):
+        '''
+        Get the 1 - average absolute difference between errors i.e. "concurrence"
+        1 = errors match
+        ...
+        0 = errors are a complete mismatch
+        '''
+        return self.concur
 
     def get_costs(self):
         '''

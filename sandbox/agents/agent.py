@@ -47,26 +47,49 @@ class Agent():
         get_type():
     """
 
-    def __init__(self, state_size=3, seed=None, behav_initial_spread=1, pred_initial_spread=1, pred_a=1, behav_a=1, model_var=None, basis_mat=None, prediction='sigmoid', behavior='sigmoid', attention='static'):
+    def __init__(self,
+                 state_size=3,
+                 seed=None,
+                 behav_initial_spread=1,
+                 pred_initial_spread=1,
+                 pred_a=1,
+                 behav_a=1,
+                 model_var=[0, 1],
+                 init_priors=[],
+                 init_preds=[],
+                 basis_mat=None,
+                 behav_update=False,
+                 prediction='sigmoid',
+                 behavior='sigmoid',
+                 attention='static'):
         self.flag = True
         if seed:
             np.random.seed(seed)
         assert state_size > 0, "state_size must be > 0"
         self.state_size = state_size  # size of a state
-        # generates a new instance of a behavioral prior.
-        self.b_priors = np.random.normal(0, 1, self.state_size)
         # self.behav_initial_spread (>=0) adjusts slope of sigmoid.
         # High values create a bimodal distribution of initial behavioral priors.
         self.behav_initial_spread = behav_initial_spread
         assert behav_initial_spread >= 0, "behav_initial_spread must be >= 0"
-        self.b_priors = matrix_sigmoid(
-            (self.b_priors)*self.behav_initial_spread)
-        self.world_pred = np.random.normal(0, 1, self.state_size)
-        # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
-        self.pred_initial_spread = pred_initial_spread
-        assert pred_initial_spread >= 0, "pred_initial_spread must be >= 0"
-        self.world_pred = matrix_sigmoid(
-            (self.world_pred)*self.pred_initial_spread)
+        if not init_priors:
+            self.b_priors = np.random.normal(0, 1, self.state_size)
+            self.b_priors = matrix_sigmoid(
+                (self.b_priors)*self.behav_initial_spread)
+        else:
+            assert len(
+                init_priors) == self.state_size, "state size and priors size must match"
+            self.b_priors = init_priors
+        if not init_preds:
+            self.world_pred = np.random.normal(0, 1, self.state_size)
+            # self.pred_initial_spread (>=0) adjusts slope of sigmoid. High values create a bimodal distribution of initial behavioral priors.
+            self.pred_initial_spread = pred_initial_spread
+            assert pred_initial_spread >= 0, "pred_initial_spread must be >= 0"
+            self.world_pred = matrix_sigmoid(
+                (self.world_pred)*self.pred_initial_spread)
+        else:
+            assert len(
+                init_preds) == self.state_size, "state size and predictions size must match"
+            self.world_pred = init_preds
         self.world = []  # history of world states
         # for recordin the most recent behavior
         self.current_behavior = []
@@ -75,19 +98,27 @@ class Agent():
         assert pred_a >= 0, "model variance must be at least 0"
         assert pred_a <= 1, "model variance must be at most 1"
         self.pred_a = pred_a
-        # behav_a is the learning rate for adjusting the agent's beahvioral model
+        # behav_a is the learning rate for adjusting the agent's behavioral model
         assert behav_a >= 0, "model variance must be at least 0"
         assert behav_a <= 1, "model variance must be at most 1"
         self.behav_a = behav_a
-        assert model_var > 0, "model variance must be greater than 0"
-        assert model_var < 1, "model variance must be less than 1"
+        if behavior != "orbit":
+            for i in model_var:
+                assert i >= 0, "model variance must be greater than 0"
+                assert i <= 1, "model variance must be less than 1"
+        else:
+            assert model_var >= 0, "model variance must be greater than 0"
+            assert model_var <= 1, "model variance must be less than 1"
         self.model_var = model_var
         # behavioral model applies some randomness or "personality" to how behavior gets adjusted
         if behavior == "orbit":
             self.behav_model = get_orbit_matrix(self.model_var, basis_mat)
         else:
-            #self.behav_model = np.random.uniform(0, 1, self.state_size)
-            self.behav_model = np.random.rand(self.state_size, 2)
+            model = np.random.uniform(
+                self.model_var[0], self.model_var[1], self.state_size)
+            var = np.random.choice(a=[-1, 1], size=self.state_size)
+            self.behav_model = model * var
+            #self.behav_model = np.random.rand(self.state_size, 2)
         # seeks to estimate the behav_model and prior of others
         self.model_estimate = np.ones((self.state_size, 2))
         x_vals = np.array([-0.5, 0, 0.5])
@@ -104,7 +135,7 @@ class Agent():
         # self.model_thresh = .95
         # self.behav_model[abs(self.behav_model) > self.model_thresh] = self.behav_model[abs(self.behav_model) > self.model_thresh]*10
         # self.behav_model[abs(self.behav_model) <= self.model_thresh] = self.behav_model[abs(self.behav_model) <= self.model_thresh]*.1
-
+        self.behav_update = behav_update
         self.metabolism = 0.0  # metabolic cost so far (accrued via learning)
         self.attn = np.identity(self.state_size)  # attention matrix
         self.pred_func = prediction
@@ -186,15 +217,15 @@ class Agent():
     def learn_conform(self):
         dif, avg_abs_error = self.behavior_prediction_error(self.behav_a)
         attn_weighted_dif = self.attn @ dif
-        #updated_dif = self.behav_model @ attn_weighted_dif
-        if len(self.past_behavior) > 0:
+        updated_dif = self.behav_model @ attn_weighted_dif
+        if len(self.past_behavior) > 0 and self.behav_update:
             self.update_behav_model()
         updated_dif = (self.behav_model.T[1]*-1) * attn_weighted_dif
         if self.behav_func == 'static':
             pass
         elif self.behav_func == 'chaos':
             self.b_priors = chaotic_update(
-                self.b_priors, 0.2, avg_abs_error)
+                self.b_priors, 0, avg_abs_error)
         elif self.behav_func == 'linear':
             self.b_priors = linear_update(
                 self.b_priors, updated_dif)
@@ -210,13 +241,13 @@ class Agent():
     def learn_predict_world(self):
         dif, avg_abs_error = self.behavior_prediction_error(self.pred_a)
         attn_weighted_dif = self.attn @ dif
-        updated_dif = self.pred_a * \
-            self.model_estimate.T[1] * attn_weighted_dif
+        #updated_dif = self.pred_a * self.model_estimate.T[1] * attn_weighted_dif
+        updated_dif = self.pred_a * attn_weighted_dif
         if self.pred_func == 'static':
             pass
         elif self.pred_func == 'chaos':
             self.world_pred = chaotic_update(
-                self.world_pred, 0.2, avg_abs_error)
+                self.world_pred, 0, avg_abs_error)
         elif self.behav_func == 'linear':
             self.world_pred = linear_update(
                 self.world_pred, attn_weighted_dif)
@@ -231,7 +262,7 @@ class Agent():
     def update_behav_model(self):
         if self.behav_func == "orbit":
             pass
-        else:
+        elif False:
             for s in range(self.state_size):
                 self.y[s][0] = self.obs_sum[s][0] / \
                     max(self.b_count[s][0], 0.001)

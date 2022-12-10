@@ -1,44 +1,26 @@
-# Social AI
+# Social Sandbox
 
 #### Overview
+Inspired by research in [social conformity and dynamics](https://www.sciencedirect.com/science/article/abs/pii/S157106452030004X) and [agent-based modeling of ToM and social cooperation](https://arxiv.org/abs/2208.11660), this sandbox is meant to give experimenters a means to explore the mergent dynamics between agents who adjust their behaviors based on the feedback of others. 
+<br/>
+The core "Sandbox" consists of two main classes: `world` & `agent.` The `world` is the environment that takes in `agents` and can then run an experiments with the agents. It records information, such as behaviors performed by agents, and errors they perceive relative to the behaviors the expected to observe. 
+<br/>
 
-Basic agent experiment where 2 agents behave and try to estimate the other's behavioral priors, using conformity as a way to stabilize the behavior of the other agent (in theory).
+#### Running an Experiment
+To run an experiment in a notebook, simply import the world class and input experimental parameters you are interested in testing. By design, `world` takes two `agents` who take the parameters given to world.
 <br/>
+`world = World(state_size =5, time =100, agent=["base", "base"], seed=8)`
 <br/>
-agent_of_chaos.py - class that determines behavior for a chaotic agent (no learning or proper estimation)
+The experimenter can then run run a discrete timestep experiment wherein those two agents interact.
 <br/>
-agent_average.py - class that determines behavior for an agent that adjusts predictions by using an average of most recently observed behaviors (priors are randomly adjusted just like in the chaotic agent)
+`world.create_agents()`
+`world.run()`
 <br/>
-agent_dummy.py - class that determines behavior for an agent with static behavior (for benchmarking/sanity checks)
-<br/>
-world.py - experiment environment for the agents
-<br/>
-inference.py - will have the learning and inference models down the line
-<br/>
-experiments.ipynb - notebook with visualized experiments
 
-#### Commands to Run
+#### Experimental Parameters
+Firstly, an experiment runs for a discrete set of timesteps, with each agent having the same number of features in their behaviors. These are determined by the paremters `time` and `state_size` respectively.
+<br/>
 
-`> python world.py -h` for help
-<br/>
-`> python world.py -b 5 -t 20 -q "chaos" "average" -a 0.3 0.4` for an experiment that runs for 20 timesteps, behavior of size 5, with a chaos and average agent with their respective alphas set to 0.3 and 0.4
-<br/>
-`> python world.py` to run on default values: 15 timesteps, behavior of size 4, chaos agents, alphas and betas set to 0.5
-<br/>
-Flags:
-<br/>
--h -> help
-<br/>
--s -> behavior size (int)
-<br/>
--t -> time steps (int)
-<br/>
--q -> agent types (0 or more str)
-<br/>
--a -> alphas (0 or more float)
-<br/>
--b -> betas (0 or more float)
 
-#### Under the Hood
 
-As of now the agents are initialized on random behavioral priors (between 0 and 1). The expectations of the other's behavior is equally random. At each time step, the agent samples from the priors to generate a behavior. Error is generated be contrasting behaviors and posterior estimations. This error is used to increment metabolic cost and update both the priors of the agents and their estimates of the other's priors. This update is done via a simple heuristic: if estimation error exceeds an arbitrary threshold, update all the estimates and the priors using the error and learning rate. A degree of randomness is incorporated in both updates.
+

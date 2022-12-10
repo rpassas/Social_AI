@@ -55,6 +55,6 @@ Once the experiment is done running, key metrics can be extracted from `world`, 
 As an extension of this sandbox, feedback nodes, based on the schemes of [Perceptual Control Theory](https://psycnet.apa.org/record/1974-10192-000) and PID controllers to enact behavior. Again, updates are driven by error signals and the nodes are designed to be hierarchically arranged. There are two main classes: `PCT_node` and `Effector`. The "effector" is the controller as part of the node, both of which can be parameterized as needed.
 
 
-
 <br/>
+
 [Demo Notebook](https://github.com/rpassas/Social_AI/blob/main/experiments/base_agent_demo.ipynb)

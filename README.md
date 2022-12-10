@@ -14,6 +14,7 @@ To run an experiment in a notebook, simply import the world class and input expe
 The experimenter can then run run a discrete timestep experiment wherein those two agents interact.
 <br/>
 `world.create_agents()`
+<br/>
 `world.run()`
 <br/>
 

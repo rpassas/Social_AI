@@ -45,12 +45,12 @@ Experimenters can also adjust the rates at which behaviors and priors are update
 <br/>
 <br/>
 Agents are also able to estimate how their behaviors change that of others with a simple linear model. They will then enact behaviors to drive counterparts' behavior towards their own predictions. To do so, the user must set the `behav_update` parameter to `True`.
-
 <br/>
+
 #### Getting Experimental Data
 Once the experiment is done running, key metrics can be extracted from `world`, including: agent parameters, prediction errors, behaviors, priors, predictability (reflects variance of priors), and others. See the `world` [class](https://github.com/rpassas/Social_AI/blob/main/sandbox/world.py) for all the parameters and methods. 
-
 <br/>
+
 #### PID-PCT Nodes
 As an extension of this sandbox, feedback nodes, based on the schemes of [Perceptual Control Theory](https://psycnet.apa.org/record/1974-10192-000) and PID controllers to enact behavior. Again, updates are driven by error signals and the nodes are designed to be hierarchically arranged. There are two main classes: `PCT_node` and `Effector`. The "effector" is the controller as part of the node, both of which can be parameterized as needed.
 

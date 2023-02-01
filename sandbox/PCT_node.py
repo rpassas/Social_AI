@@ -6,8 +6,8 @@ class PCT_node:
     def __init__(self,
                  sensor,
                  comparator,
-                 generate_reference,
                  control_update,
+                 generate_reference=None,
                  Kp=0,
                  Kd=0,
                  Ki=0,
@@ -30,7 +30,7 @@ class PCT_node:
         return self.sensory_signal
 
     def compare(self, reference_signal, sensory_signal):
-        if len(reference_signal) != sensory_signal:
+        if len(reference_signal) != len(sensory_signal):
             raise ValueError("Sensory signal must match reference signal.")
         self.error = self.comparator(reference_signal, sensory_signal)
         return self.error
@@ -45,15 +45,17 @@ class PCT_node:
         Ki_new = self.bound(Ki_new)  # prevent windup
         self.effector.set_params(Kp_new, Ki_new, Kd_new)
 
-    def generate_reference(self):
+    def set_reference(self, reference=[]):
         if not self.parents:
-            self.reference = self.reference_update(self.reference, self.error)
+            self.reference = reference
+            #self.reference = self.reference_update(self.reference, self.error)
         else:
             inputs = [p.get_output() for p in self.parents]
             self.reference = self.generate_reference(inputs, self.error)
+        return self.reference
 
-    def go(self, observation):
-        reference_signal = self.generate_reference()
+    def go(self, reference_signal, observation):
+        reference_signal = self.set_reference(reference_signal)
         sense = self.sense(observation)
         error = self.compare(reference_signal, sense)
         output = self.effect(self.error)
@@ -70,10 +72,11 @@ class PCT_node:
         return self.error
 
     def bound(self, val):
-        lower = min(self.output_limits)
-        upper = max(self.output_limits)
-        if upper is not None and val > upper:
-            return upper
-        if lower is not None and val < lower:
-            return lower
+        if self.output_limits[0] and self.output_limits[1]:
+            lower = min(self.output_limits)
+            upper = max(self.output_limits)
+            if upper is not None and val > upper:
+                return upper
+            if lower is not None and val < lower:
+                return lower
         return val
